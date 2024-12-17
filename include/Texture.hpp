@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <glad/glad.h>
 
 namespace Vision {
 class Texture {
@@ -16,6 +17,7 @@ class Texture {
 
   public:
     Texture(const std::string path, const bool alpha);
+    Texture(const uint32_t width, const uint32_t height, const uint32_t format);
 
     inline uint32_t& GetID() { return renderID; }
     void Bind() const;
