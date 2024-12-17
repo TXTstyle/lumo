@@ -55,11 +55,27 @@ int main() {
     Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F);
     texture.Bind();
 
+    float deltaTime = 0.0f; // time between current frame and last frame
+    float lastFrame = 0.0f; // time of last frame
+    int fCounter = 0;
+
     std::cout << "Start Rendering" << std::endl;
     while (!renderer.ShouldClose()) {
+        // Set frame time
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        if (fCounter > 500) {
+            std::cout << "FPS: " << 1 / deltaTime << std::endl;
+            fCounter = 0;
+        } else {
+            fCounter++;
+        }
+
         cam.Controls(renderer);
 
         computeShader.Use();
+        computeShader.SetFloat("uTime", currentFrame);
         glDispatchCompute((unsigned int)imgSize.x, (unsigned int)imgSize.y, 1);
         // make sure to writing to image has finished before read
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
