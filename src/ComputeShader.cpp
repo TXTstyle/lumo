@@ -50,6 +50,12 @@ ComputeShader::~ComputeShader() {
 
 void ComputeShader::Use() const { glUseProgram(id); }
 
+void ComputeShader::Dispatch(glm::vec3 groupSize) {
+    glDispatchCompute((unsigned int)groupSize.x, (unsigned int)groupSize.y, (unsigned int)groupSize.z);
+    // make sure to writing to image has finished before read
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+}
+
 void ComputeShader::SetInt(const std::string& name, int value, bool useShader) {
     if (useShader)
         this->Use();
@@ -87,11 +93,24 @@ void ComputeShader::SetVec2f(const std::string& name, glm::vec2 values,
         this->Use();
     glUniform2f(glGetUniformLocation(id, name.c_str()), values.x, values.y);
 }
+void ComputeShader::SetVec2i(const std::string& name, glm::ivec2 values,
+                             bool useShader) {
+    if (useShader)
+        this->Use();
+    glUniform2i(glGetUniformLocation(id, name.c_str()), values.x, values.y);
+}
 void ComputeShader::SetMat4f(const std::string& name, const glm::mat4& matrix,
                              bool useShader) {
     if (useShader)
         this->Use();
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE,
+                       &matrix[0][0]);
+}
+void ComputeShader::SetMat3f(const std::string& name, const glm::mat3& matrix,
+                             bool useShader) {
+    if (useShader)
+        this->Use();
+    glUniformMatrix3fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE,
                        &matrix[0][0]);
 }
 

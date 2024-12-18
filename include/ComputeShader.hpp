@@ -19,6 +19,8 @@ class ComputeShader {
     void Use() const;
     inline uint32_t& GetID() { return id; }
 
+    void Dispatch(glm::vec3 groupSize);
+
     void SetInt(const std::string& name, int value, bool useShader = false);
     void SetIntArray(const std::string& name, int count, int* value,
                      bool useShader = false);
@@ -29,7 +31,11 @@ class ComputeShader {
                   bool useShader = false);
     void SetVec2f(const std::string& name, glm::vec2 values,
                   bool useShader = false);
+    void SetVec2i(const std::string& name, glm::ivec2 values,
+                  bool useShader = false);
     void SetMat4f(const std::string& name, const glm::mat4& matrix,
+                  bool useShader = false);
+    void SetMat3f(const std::string& name, const glm::mat3& matrix,
                   bool useShader = false);
 
     void SetIntArrayInit(const std::string& name, bool useShader = true);
