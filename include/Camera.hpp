@@ -15,7 +15,7 @@ class Camera {
     float sensitivity = 0.075f;
 
     glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 camFront = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 camFront = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
     float deltaTime;

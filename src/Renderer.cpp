@@ -50,8 +50,8 @@ void Renderer::Init(const glm::vec2 windowSize, const std::string windowName) {
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
     glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, ResizeCallback);
-    glfwSetCursorPosCallback(window, CursorCallback);
+    // glfwSetFramebufferSizeCallback(window, ResizeCallback);
+    // glfwSetCursorPosCallback(window, CursorCallback);
     // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSwapInterval(1);
