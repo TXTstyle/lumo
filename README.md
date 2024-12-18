@@ -1,6 +1,8 @@
 # osen-raytracer
 Raytracer
 
+![preview](./preview.png)
+
 ## Build
 
 ```bash
