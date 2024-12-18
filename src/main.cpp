@@ -39,7 +39,7 @@ int main() {
     shader.Use();
     shader.SetInt("uTex", 0);
 
-    Vision::Camera cam({0.0f, 0.0f, 0.0f}, 45.0f, 5.0f);
+    Vision::Camera cam({-0.7f, 1.0f, -7.6f}, 45.0f, 5.0f);
 
     std::array<float, 20> verts = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f, //
@@ -57,31 +57,28 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    std::array<Sphere, 3> objects = {
+    std::array<Sphere, 5> objects = {
         Sphere{
-            {1.0f, 2.0f, 1.0f, 0.5f},
-            {0.0f, 1.0f, 0.0f, 1.0f},
+            {0.0f, 0.0f, 0.0f, 1.0f},
+            {1.0f, 0.0f, 0.0f, 0.0f},
         },
         Sphere{
-            {-1.0f, 1.0f, 1.0f, 1.0f},
-            {0.0f, 0.0f, 1.0f, 1.0f},
+            {-1.8f, -0.4f, -0.4f, 0.6f},
+            {0.0f, 1.0f, 0.0f, 0.0f},
         },
         Sphere{
-            {0.0f, -2.0f, 0.0f, 2.0f},
-            {1.0f, 0.0f, 0.0f, 1.0f},
+            {-1.0f, -0.5f, -1.6f, 0.26f},
+            {0.0f, 0.0f, 1.0f, 0.0f},
+        },
+        Sphere{
+            {0.0f, -41.0f, 0.0f, 40.0f},
+            {0.3f, 0.1f, 0.4f, 0.0f},
+        },
+        Sphere{
+            {-31.0f, 11.4f, 41.0f, 20.0f},
+            {1.0f, 1.0f, 1.0f, 18.0f},
         },
     };
-    // std::array<float, 21> objects = {
-    //         1.0f, 2.0f, 1.0f,
-    //     0.5f,
-    //         0.0f, 1.0f, 0.0f,
-    //         -1.0f, 1.0f, 1.0f,
-    //         0.0f, 0.0f, 1.0f,
-    //         2.0f,
-    //         0.0f, -2.0f, 0.0f,
-    //         1.0f, 0.0f, 0.0f,
-    //         1.0f,
-    // };
 
     Vision::ShaderStorage ssbo(objects.data(), objects.size() * sizeof(Sphere),
                                3);
@@ -115,6 +112,8 @@ int main() {
         // computeShader.SetFloat("uTime", currentFrame);
         computeShader.SetMat3f("uCamMat", cam.getMat());
         computeShader.SetFloat("uFOV", cam.getFov());
+        computeShader.SetFloat("uMaxBounce", 5);
+        computeShader.SetFloat("uRayPerPixel", 128);
         computeShader.SetVec3f("uCamPos", cam.getPos());
         computeShader.SetVec2i("uRes", imgSize);
 
