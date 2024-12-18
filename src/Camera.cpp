@@ -1,24 +1,16 @@
 #include "Camera.hpp"
-
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "Renderer.hpp"
+#include <glm/ext/matrix_transform.hpp>
+#include <iostream>
 
 using namespace Vision;
 
-Camera::Camera(Renderer& renderer, const glm::vec3 startPos,
-               const glm::vec2 clip, float fov, float camSpeed)
-    : camClip(clip), camSpeed(camSpeed), camFov(fov), camPos(startPos) {
-    projMat = glm::perspective(glm::radians(camFov),
-                               renderer.GetWindowSize().x /
-                                   renderer.GetWindowSize().y,
-                               camClip.x, camClip.y);
-    viewMat = glm::lookAt(camPos, glm::vec3(0.0f), camUp);
-}
+Camera::Camera(glm::vec3 p_camPos, float p_fov, float p_camSpeed)
+    : camSpeed(p_camSpeed), camFov(p_fov), camPos(p_camPos) {}
 
 Camera::~Camera() {}
+
+float scroll = 1;
+double mouseX, mouseY;
 
 void Camera::Controls(Renderer& renderer) {
     float mouseX = 0;
@@ -39,8 +31,8 @@ void Camera::Controls(Renderer& renderer) {
     }
 
     float xoffset = mouseX - lastX;
-    float yoffset =
-        lastY - mouseY; // reversed since y-coordinates range from bottom to top
+    // float yoffset = lastY - mouseY; // reversed since y-coordinates range from bottom to top
+    float yoffset = mouseY - lastY;
     lastX = mouseX;
     lastY = mouseY;
 
@@ -99,30 +91,28 @@ void Camera::Controls(Renderer& renderer) {
     }
 
     if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_W) == GLFW_PRESS) {
-        camPos += speed * camFront;
-    }
-    if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_S) == GLFW_PRESS) {
         camPos -= speed * camFront;
     }
+    if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_S) == GLFW_PRESS) {
+        camPos += speed * camFront;
+    }
     if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_A) == GLFW_PRESS) {
-        camPos -= glm::normalize(glm::cross(camFront, camUp)) * speed;
+        camPos -= -glm::normalize(glm::cross(camFront, camUp)) * speed;
     }
     if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_D) == GLFW_PRESS) {
-        camPos += glm::normalize(glm::cross(camFront, camUp)) * speed;
+        camPos += -glm::normalize(glm::cross(camFront, camUp)) * speed;
     }
 
-    viewMat = glm::lookAt(camPos, camPos + camFront, camUp);
-    projMat = glm::perspective(glm::radians(camFov),
-                               renderer.GetWindowSize().x /
-                                   renderer.GetWindowSize().y,
-                               camClip.x, camClip.y);
+    glm::vec3 camF = glm::normalize(glm::vec3((camPos + camFront) - camPos));
+    glm::vec3 camR = glm::normalize(glm::cross(glm::vec3(0, 1, 0), camF));
+    glm::vec3 camU = glm::cross(camF, camR);
+    camMat = glm::mat3(camR, camU, camF);
 }
 
-glm::ivec2 Camera::GetChunkPos() {
-    glm::ivec2 pos = {camPos.x, camPos.z}; 
-    return pos / 16;
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (yoffset > 0) {
+        scroll = 1.025;
+    } else if (yoffset < 0) {
+        scroll = 0.975f;
+    }
 }
-
-glm::mat4& Camera::getProjMat() { return projMat; }
-
-glm::mat4& Camera::getViewMat() { return viewMat; }

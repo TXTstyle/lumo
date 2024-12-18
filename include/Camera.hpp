@@ -1,12 +1,11 @@
 #pragma once
-#include <glm/glm.hpp>
-
 #include "Renderer.hpp"
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
 
 namespace Vision {
 class Camera {
   private:
-    const glm::vec2 camClip;
     float camSpeed;
     float camFov;
     float yaw = -90.0f;
@@ -15,28 +14,25 @@ class Camera {
     bool firstMouse = true;
     float sensitivity = 0.075f;
 
-
-    glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 1.0f);
+    glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 camFront = glm::vec3(0.0f, 0.0f, 1.0f);
     glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
     float deltaTime;
     float lastFrame;
 
-    glm::mat4 projMat;
-    glm::mat4 viewMat;
+    glm::mat3 camMat;
 
-    bool cursorOn = true;
-    bool cursorToggle = true;
+    bool cursorOn = false;
+    bool cursorToggle = false;
 
   public:
-    Camera(Renderer& renderer, const glm::vec3 startPos, const glm::vec2 clip, float fov, float camSpeed);
+    Camera(glm::vec3 p_camPos, float p_fov, float p_camSpeed);
     ~Camera();
 
-    glm::mat4& getProjMat();
-    glm::mat4& getViewMat();
-
-    glm::ivec2 GetChunkPos();
+    inline glm::vec3& getPos() { return camPos; }
+    inline glm::mat3& getMat() { return camMat; }
+    inline float& getFov() { return camFov; }
 
     void Controls(Renderer& renderer);
 };
