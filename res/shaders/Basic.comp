@@ -1,20 +1,93 @@
 #version 450 core
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
-layout(location = 0) uniform float uTime;
+// layout(location = 0) uniform float uTime;
+layout(location = 1) uniform ivec2 uRes;
+layout(location = 2) uniform mat3 uCamMat;
+layout(location = 3) uniform vec3 uCamPos;
+layout(location = 4) uniform float uFOV;
+
+struct Sphere {
+    vec4 origin;
+    vec4 color;
+};
+
+layout(binding = 3) buffer ssbo {
+    Sphere objects[3];
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 dir;
+};
+
+struct HitInfo {
+    bool didHit;
+    float dst;
+    vec3 hitPoint;
+    vec3 normal;
+    vec4 color;
+};
+
+HitInfo RaySphere(Ray ray, vec3 sphereCenter, float sphereRadius) {
+    HitInfo hitInfo;
+    hitInfo.didHit = false;
+    vec3 offsetRayOrigin = ray.origin - sphereCenter;
+
+    float a = dot(ray.dir, ray.dir);
+    float b = 2 * dot(offsetRayOrigin, ray.dir);
+    float c = dot(offsetRayOrigin, offsetRayOrigin) - sphereRadius * sphereRadius;
+
+    float discriminant = b * b - 4 * a * c;
+
+    if (discriminant >= 0) {
+        float dst = (-b - sqrt(discriminant)) / (2 * a);
+
+        if (dst >= 0) {
+            hitInfo.didHit = true;
+            hitInfo.dst = dst;
+            hitInfo.hitPoint = ray.origin + ray.dir * dst;
+            hitInfo.normal = normalize(hitInfo.hitPoint - sphereCenter);
+        }
+    }
+    return hitInfo;
+}
 
 void main() {
     vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    
-    float speed = 100;
-    float width = 512;
-	
-    value.x = mod(float(texelCoord.x) + uTime * speed, width) / (gl_NumWorkGroups.x);
-    value.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
-	
+    vec2 uv = (vec2(texelCoord) + 0.5) / vec2(uRes) * 2.0 - 1.0;
+
+    float aspectRatio = float(uRes.x) / float(uRes.y);
+    uv.x *= aspectRatio;
+
+    float scale = tan(radians(uFOV) * 0.5);
+    vec3 dir = normalize(uCamMat * vec3(uv * scale, -1.0));
+
+    Ray ray;
+    ray.origin = uCamPos;
+    ray.dir = dir;
+
+    value.xyz = vec3(0.0);
+    HitInfo closestHit;
+    closestHit.color = vec4(0.0);
+    closestHit.dst = 1000.0;
+
+    for (int i = 0; i < 3; i++) {
+        // Intersect ray with a sphere
+        Sphere sphere = objects[i];
+        HitInfo info = RaySphere(ray, sphere.origin.xyz, sphere.origin.a);
+
+        // Output the result
+        if (info.didHit && info.dst < closestHit.dst) {
+            closestHit = info;
+            closestHit.color = sphere.color;
+        }
+    }
+
+    value = closestHit.color;
     imageStore(imgOutput, texelCoord, value);
 }
