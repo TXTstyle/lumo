@@ -160,6 +160,7 @@ void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec4 result = Render(texelCoord);
+    result = vec4(pow(result.xyz, vec3(0.4545)), 1.0);
 
     imageStore(imgOutput, texelCoord, result);
 }
