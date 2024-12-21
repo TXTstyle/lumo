@@ -9,6 +9,7 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <stb/stb_image_write.h>
 
 #include "Camera.hpp"
 #include "ComputeShader.hpp"
@@ -20,6 +21,48 @@
 #include "VertexBufferLayout.hpp"
 #include "Texture.hpp"
 #include "ShaderStorage.hpp"
+
+// Function to save OpenGL texture to a PNG file
+bool saveTextureToFile(GLuint textureID, int width, int height,
+                       const char* filename) {
+    // Bind the texture
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // Allocate a buffer to store the texture data
+    std::vector<unsigned char> pixels(width * height *
+                                      4); // Assuming 4 channels (RGBA)
+
+    // Read the texture data into the buffer
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+    // Check for OpenGL errors
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        std::cerr << "OpenGL error: " << err << std::endl;
+        return false;
+    }
+
+    // Unbind the texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Flip the image vertically since OpenGL's origin is bottom-left
+    for (int y = 0; y < height / 2; ++y) {
+        int offset1 = y * width * 4;
+        int offset2 = (height - y - 1) * width * 4;
+        for (int x = 0; x < width * 4; ++x) {
+            std::swap(pixels[offset1 + x], pixels[offset2 + x]);
+        }
+    }
+
+    // Write the image to a file using stb_image_write
+    if (stbi_write_png(filename, width, height, 4, pixels.data(), width * 4)) {
+        std::cout << "Image saved to " << filename << std::endl;
+        return true;
+    } else {
+        std::cerr << "Failed to save image to file" << std::endl;
+        return false;
+    }
+}
 
 struct Sphere {
     glm::vec4 origin;
@@ -141,6 +184,16 @@ int main() {
             fCounter++;
         }
         totalFrames++;
+
+        // Save frame to disk
+        if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_ENTER) == GLFW_PRESS) {
+            std::cout << "Saving..." << std::endl;
+            saveTextureToFile(textureOld.GetID(), imgSize.x, imgSize.y,
+                              "saved-frame.png");
+            textureOld.Bind(1);
+            texture.Bind(0);
+        }
+
         // Update camera controls
         cam.Controls(renderer);
 
