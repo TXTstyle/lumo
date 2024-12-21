@@ -15,6 +15,7 @@ layout(location = 6) uniform float uRayPerPixel;
 struct Sphere {
     vec4 origin;
     vec4 color;
+    vec4 info;
 };
 
 layout(binding = 3) buffer ssbo {
@@ -32,6 +33,7 @@ struct HitInfo {
     vec3 hitPoint;
     vec3 normal;
     vec4 color;
+    vec4 info;
 };
 
 float RandomValue(inout uint state) {
@@ -91,12 +93,13 @@ HitInfo CalculateRayCollision(Ray ray) {
     for (int i = 0; i < objects.length(); i++) {
         // Intersect ray with a sphere
         Sphere sphere = objects[i];
-        HitInfo info = RaySphere(ray, sphere.origin.xyz, sphere.origin.a);
+        HitInfo info = RaySphere(ray, sphere.origin.xyz, sphere.info.x);
 
         // Output the result
         if (info.didHit && info.dst < closestHit.dst) {
             closestHit = info;
             closestHit.color = sphere.color;
+            closestHit.info = sphere.info;
         }
     }
 
@@ -111,9 +114,11 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-            ray.dir = normalize(info.normal + RandomDirection(rngState));
+            vec3 diff = normalize(info.normal + RandomDirection(rngState));
+            vec3 spec = reflect(ray.dir, info.normal);
+            ray.dir = mix(diff, spec, info.info.z);
 
-            vec3 emittedLight = info.color.xyz * info.color.a;
+            vec3 emittedLight = info.color.xyz * info.info.y;
             incommingLight += emittedLight * rayColor;
             rayColor *= info.color.xyz;
         } else {
