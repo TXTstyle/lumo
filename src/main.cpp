@@ -8,9 +8,11 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <array>
+#include <vector>
 
 #include "Camera.hpp"
 #include "ComputeShader.hpp"
+#include "Framebuffer.hpp"
 #include "Renderer.hpp"
 #include "Shader.hpp"
 #include "VertexArray.hpp"
@@ -38,6 +40,7 @@ int main() {
     Vision::Shader shader("res/shaders/Basic.vert", "res/shaders/Basic.frag");
     shader.Use();
     shader.SetInt("uTex", 0);
+    shader.SetInt("uTexOld", 1);
 
     Vision::Camera cam({-0.7f, 1.0f, -7.6f}, 45.0f, 5.0f);
 
@@ -85,12 +88,19 @@ int main() {
     ssbo.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
-    Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F);
-    texture.Bind();
+    Vision::Texture textureOld(imgSize.x, imgSize.y, GL_RGBA32F, 1);
+    textureOld.Bind(1);
+    Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F, 0);
+    texture.Bind(0);
+
+    std::vector<uint32_t> attachments = {textureOld.GetID()};
+
+    Vision::Framebuffer oldFrame(attachments);
 
     float deltaTime = 0.0f; // time between current frame and last frame
     float lastFrame = 0.0f; // time of last frame
     int fCounter = 0;
+    int totalFrames = 0;
 
     std::cout << "Start Rendering" << std::endl;
     while (!renderer.ShouldClose()) {
@@ -98,18 +108,19 @@ int main() {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        if (fCounter > 500) {
-            std::cout << "FPS: " << 1 / deltaTime
-                      << " CamPos: " << cam.getPos().x << " " << cam.getPos().y
-                      << " " << cam.getPos().z << std::endl;
+        if (fCounter > 200) {
+            std::cout << "FPS: " << 1 / deltaTime << std::endl;
             fCounter = 0;
         } else {
             fCounter++;
         }
+        totalFrames++;
+        // Update camera controls
         cam.Controls(renderer);
 
+        // Generate image
         computeShader.Use();
-        // computeShader.SetFloat("uTime", currentFrame);
+        computeShader.SetFloat("uTime", totalFrames);
         computeShader.SetMat3f("uCamMat", cam.getMat());
         computeShader.SetFloat("uFOV", cam.getFov());
         computeShader.SetFloat("uMaxBounce", 5);
@@ -119,10 +130,20 @@ int main() {
 
         computeShader.Dispatch({imgSize.x, imgSize.y, 1});
 
+        // Render image quad
         renderer.Clear({0.0, 0.0, 0.0});
         shader.Use();
 
+        shader.SetFloat("uTime", totalFrames);
+        shader.SetInt("uTex", 0);
+        shader.SetInt("uTexOld", 1);
+
         renderer.Draw(va, shader, 4);
+
+        // Copy new render to old render
+        glm::vec2& winSize = renderer.GetWindowSize();
+        oldFrame.CopyFromDefault(winSize);
+        oldFrame.UnBind();
 
         renderer.Swap();
     }

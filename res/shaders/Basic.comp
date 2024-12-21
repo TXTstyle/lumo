@@ -4,7 +4,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
-// layout(location = 0) uniform float uTime;
+layout(location = 0) uniform float uTime;
 layout(location = 1) uniform ivec2 uRes;
 layout(location = 2) uniform mat3 uCamMat;
 layout(location = 3) uniform vec3 uCamPos;
@@ -124,8 +124,7 @@ vec3 Trace(Ray ray, inout uint rngState) {
     return incommingLight;
 }
 
-void main() {
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+vec4 Render(ivec2 texelCoord) {
     vec2 uv = (vec2(texelCoord) + 0.5) / vec2(uRes) * 2.0 - 1.0;
 
     float aspectRatio = float(uRes.x) / float(uRes.y);
@@ -139,14 +138,23 @@ void main() {
     ray.dir = dir;
 
     uint pixelIndex = texelCoord.y * uRes.x + texelCoord.x;
+    uint rngState = pixelIndex + uint(uTime) * 719393;
 
     vec3 totalIncomingLight = vec3(0);
 
     for (int i = 0; i < uRayPerPixel; i++) {
-        totalIncomingLight += Trace(ray, pixelIndex);
+        totalIncomingLight += Trace(ray, rngState);
     }
 
     vec3 pixelCol = totalIncomingLight / uRayPerPixel;
 
-    imageStore(imgOutput, texelCoord, vec4(pixelCol, 1.0));
+    return vec4(pixelCol, 1.0);
+}
+
+void main() {
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    vec4 result = Render(texelCoord);
+
+    imageStore(imgOutput, texelCoord, result);
 }

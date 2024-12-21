@@ -12,14 +12,19 @@ class Texture {
     uint32_t format, imgFormat;
     uint32_t wrapS, wrapT;
     uint32_t filterMin, filterMax;
+    uint32_t index = 0;
 
     void Generate(uint32_t width, uint32_t height, unsigned char* data);
 
   public:
     Texture(const std::string path, const bool alpha);
-    Texture(const uint32_t width, const uint32_t height, const uint32_t format);
+    Texture(const uint32_t width, const uint32_t height, const uint32_t format, uint32_t index);
+    ~Texture();
+
+    void CopyTo(Texture &texture);
 
     inline uint32_t& GetID() { return renderID; }
-    void Bind() const;
+    // -1 = use last
+    void Bind(int index = -1);
 };
 } // namespace Vision

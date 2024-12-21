@@ -2,6 +2,7 @@
 #include "stb/stb_image.h"
 #include <cstdint>
 #include <glad/glad.h>
+#include <iostream>
 #include <string>
 
 using namespace Vision;
@@ -25,9 +26,10 @@ Texture::Texture(const std::string path, const bool alpha)
 }
 
 Texture::Texture(const uint32_t width, const uint32_t height,
-                 const uint32_t format) {
+                 const uint32_t format, uint32_t index)
+    : width(width), height(height), format(format) {
     glGenTextures(1, &renderID);
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0 + index);
     glBindTexture(GL_TEXTURE_2D, renderID);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -37,11 +39,25 @@ Texture::Texture(const uint32_t width, const uint32_t height,
                  NULL);
 
     glBindImageTexture(0, renderID, 0, GL_FALSE, 0, GL_READ_WRITE, format);
-    glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderID);
+    std::cout << "Texture created, id: " << renderID << std::endl;
 }
 
-void Texture::Bind() const { glBindTexture(GL_TEXTURE_2D, renderID); }
+Texture::~Texture() {
+    std::cout << "Texture destroyed, id: " << renderID << std::endl;
+}
+
+void Texture::Bind(int index){
+    if (index != -1) {
+        this->index = index;
+    }
+    glActiveTexture(GL_TEXTURE0 + this->index);
+    glBindTexture(GL_TEXTURE_2D, renderID);
+}
+
+void Texture::CopyTo(Texture &texture) {
+    glCopyImageSubData(renderID, GL_TEXTURE_2D, 0, 0, 0, 0, texture.GetID(),
+                       GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
+}
 
 void Texture::Generate(uint32_t width, uint32_t height, unsigned char* data) {
     this->width = width;
