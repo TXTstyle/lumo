@@ -202,12 +202,12 @@ int main() {
         computeShader.SetFloat("uTime", totalFrames);
         computeShader.SetMat3f("uCamMat", cam.getMat());
         computeShader.SetFloat("uFOV", cam.getFov());
-        computeShader.SetFloat("uMaxBounce", 15);
-        computeShader.SetFloat("uRayPerPixel", 128);
+        computeShader.SetFloat("uMaxBounce", 10);
+        computeShader.SetFloat("uRayPerPixel", 75);
         computeShader.SetVec3f("uCamPos", cam.getPos());
         computeShader.SetVec2i("uRes", imgSize);
 
-        computeShader.Dispatch({imgSize.x, imgSize.y, 1});
+        computeShader.Dispatch({imgSize.x/16, imgSize.y/16, 1});
 
         // Render image quad
         renderer.Clear({0.0, 0.0, 0.0});
