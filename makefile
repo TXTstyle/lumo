@@ -1,5 +1,5 @@
 CXX		:=	clang++
-FLAGS	:=	-Wall -Wextra -std=c++17
+FLAGS	:=	-Wall -Wextra -std=c++17 -O2
 
 INCLUDE	:=	include
 SRC		:=	src
@@ -16,6 +16,7 @@ $(BIN)/%.o: $(SRC)/%.cpp
 	$(CXX) -c -o $@ $< $(FLAGS) -I$(INCLUDE)
 
 $(BIN)/$(EXE): $(OBJ)
+	mkdir -p $(BIN)
 	$(CXX) $(FLAGS) -I$(INCLUDE) -o $@ $^ $(LIBS) -fuse-ld=mold
 
 
