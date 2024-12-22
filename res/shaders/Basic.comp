@@ -61,6 +61,12 @@ vec3 RandomHemisphereDirection(vec3 normal, inout uint rngState) {
     return dir * sign(dot(normal, dir));
 }
 
+vec2 RandomPointInCircle(inout uint rngState) {
+    float angle = RandomValue(rngState) * 2 * 3.1415926;
+    vec2 pointOnCircle = vec2(cos(angle), sin(angle));
+    return pointOnCircle * sqrt(RandomValue(rngState));
+}
+
 HitInfo RaySphere(Ray ray, vec3 sphereCenter, float sphereRadius) {
     HitInfo hitInfo;
     hitInfo.didHit = false;
@@ -136,11 +142,6 @@ vec4 Render(ivec2 texelCoord) {
     uv.x *= aspectRatio;
 
     float scale = tan(radians(uFOV) * 0.5);
-    vec3 dir = normalize(uCamMat * vec3(uv * scale, -1.0));
-
-    Ray ray;
-    ray.origin = uCamPos;
-    ray.dir = dir;
 
     uint pixelIndex = texelCoord.y * uRes.x + texelCoord.x;
     uint rngState = pixelIndex + uint(uTime) * 719393;
@@ -148,6 +149,15 @@ vec4 Render(ivec2 texelCoord) {
     vec3 totalIncomingLight = vec3(0);
 
     for (int i = 0; i < uRayPerPixel; i++) {
+        Ray ray;
+        ray.origin = uCamPos;
+
+        vec2 jitter = RandomPointInCircle(rngState) * 2;
+        vec2 jitteredUV = uv + jitter / vec2(uRes);
+        vec3 jitteredDir = normalize(uCamMat * vec3(jitteredUV * scale, -1.0));
+
+        ray.dir = jitteredDir;
+
         totalIncomingLight += Trace(ray, rngState);
     }
 
