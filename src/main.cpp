@@ -72,7 +72,7 @@ struct Sphere {
 
 int main() {
     Vision::Renderer renderer;
-    glm::uvec2 imgSize = {1280, 720};
+    glm::uvec2 imgSize = {1920, 1080};
     try {
         renderer.Init(imgSize, "dev");
     } catch (const std::exception& e) {
@@ -138,12 +138,12 @@ int main() {
         Sphere{
             {2.0f, 1.0f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
-            {1.0f, 0.0f, 0.4f, 0.0f},
+            {1.0f, 0.0f, 2.0f, 0.0f},
         },
         Sphere{
             {2.0f, 2.6f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
-            {0.6f, 0.0f, 0.6f, 0.0f},
+            {0.6f, 0.0f, 2.0f, 0.0f},
         },
         Sphere{
             {-2.0f, 2.0f, 2.0f, 0.0f},
@@ -153,7 +153,7 @@ int main() {
     };
 
     Vision::ShaderStorage ssbo(objects.data(), objects.size() * sizeof(Sphere),
-                               3);
+                               1);
     ssbo.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
@@ -161,6 +161,9 @@ int main() {
     textureOld.Bind(1);
     Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F, 0);
     texture.Bind(0);
+    Vision::Texture diffTex("res/textures/wood_planks_diff_2k.png", false);
+    Vision::Texture roughTex("res/textures/wood_planks_rough_2k.png", false);
+    Vision::Texture normTex("res/textures/wood_planks_nor_gl_2k.png", true);
 
     std::vector<uint32_t> attachments = {textureOld.GetID()};
 
@@ -206,12 +209,17 @@ int main() {
         computeShader.SetFloat("uRayPerPixel", 75);
         computeShader.SetVec3f("uCamPos", cam.getPos());
         computeShader.SetVec2i("uRes", imgSize);
+        diffTex.Bind(1);
+        roughTex.Bind(2);
+        normTex.Bind(3);
 
         computeShader.Dispatch({imgSize.x/16, imgSize.y/16, 1});
 
         // Render image quad
         renderer.Clear({0.0, 0.0, 0.0});
         shader.Use();
+        texture.Bind();
+        textureOld.Bind();
 
         shader.SetFloat("uTime", totalFrames);
         shader.SetInt("uTex", 0);

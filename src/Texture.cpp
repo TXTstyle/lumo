@@ -9,7 +9,7 @@ using namespace Vision;
 
 Texture::Texture(const std::string path, const bool alpha)
     : width(0), height(0), format(GL_RGB), imgFormat(GL_RGB), wrapS(GL_REPEAT),
-      wrapT(GL_REPEAT), filterMin(GL_NEAREST), filterMax(GL_NEAREST) {
+      wrapT(GL_REPEAT), filterMin(GL_LINEAR), filterMax(GL_LINEAR) {
 
     if (alpha) {
         format = GL_RGBA8;
@@ -17,7 +17,7 @@ Texture::Texture(const std::string path, const bool alpha)
     }
 
     int width, height, BPP;
-    stbi_set_flip_vertically_on_load(1);
+    stbi_set_flip_vertically_on_load(0);
     unsigned char* data = stbi_load(path.c_str(), &width, &height, &BPP, 0);
 
     Generate(width, height, data);

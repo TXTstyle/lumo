@@ -3,6 +3,9 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
+layout(binding = 1) uniform sampler2D uDiff;
+layout(binding = 2) uniform sampler2D uRough;
+layout(binding = 3) uniform sampler2D uNorm;
 
 layout(location = 0) uniform float uTime;
 layout(location = 1) uniform ivec2 uRes;
@@ -18,7 +21,7 @@ struct Sphere {
     vec4 info;
 };
 
-layout(binding = 3) buffer ssbo {
+layout(std430, binding = 1) buffer ssbo {
     Sphere objects[];
 };
 
@@ -31,6 +34,7 @@ struct HitInfo {
     bool didHit;
     float dst;
     vec3 hitPoint;
+    vec3 center;
     vec3 normal;
     vec4 color;
     vec4 info;
@@ -65,6 +69,35 @@ vec2 RandomPointInCircle(inout uint rngState) {
     float angle = RandomValue(rngState) * 2 * 3.1415926;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomValue(rngState));
+}
+
+vec2 getSphereUV(vec3 hitPoint, vec3 sphereCenter) {
+    vec3 localP = hitPoint - sphereCenter;
+    // Normalize the local point to ensure it's on the sphere surface
+    vec3 n = normalize(localP);
+
+    // Calculate spherical coordinates
+    float u = 0.5 + atan(n.z, n.x) / (2.0 * 3.14159);
+    float v = 0.5 - asin(n.y) / 3.14159;
+
+    return vec2(u, v);
+}
+
+vec3 applyNormalMap(vec3 norm, vec2 uv) {
+    // Sample the normal map and decode it to tangent space
+    vec3 normalMapColor = texture(uNorm, uv).rgb;
+    vec3 tangentNormal = normalize(normalMapColor * 2.0 - 1.0);
+
+    // Calculate the TBN matrix
+    // vec3 norm = normalize(norm); // Object-space normal
+    vec3 tangent = normalize(vec3(-norm.z, 0.0, norm.x)); // Tangent vector
+    vec3 bitangent = cross(norm, tangent); // Bitangent vector
+
+    // Transform tangent-space normal to object/world space
+    mat3 TBN = mat3(-tangent, -bitangent, norm);
+    vec3 perturbedNormal = normalize(TBN * tangentNormal);
+
+    return perturbedNormal;
 }
 
 HitInfo RaySphere(Ray ray, vec3 sphereCenter, float sphereRadius) {
@@ -106,6 +139,7 @@ HitInfo CalculateRayCollision(Ray ray) {
             closestHit = info;
             closestHit.color = sphere.color;
             closestHit.info = sphere.info;
+            closestHit.center = sphere.origin.xyz;
         }
     }
 
@@ -120,13 +154,17 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-            vec3 diff = normalize(info.normal + RandomDirection(rngState));
-            vec3 spec = reflect(ray.dir, info.normal);
-            ray.dir = mix(diff, spec, info.info.z);
+            vec2 sphereUV = getSphereUV(info.hitPoint, info.center);
+            vec3 norm = info.info.z == 2.0 ? applyNormalMap(info.normal, sphereUV) : info.normal;
+
+            vec3 diff = normalize(norm + RandomDirection(rngState));
+            vec3 spec = reflect(ray.dir, norm);
+            float rough = info.info.z == 2.0 ? 1 - texture(uRough, sphereUV).r : info.info.z;
+            ray.dir = mix(diff, spec, rough);
 
             vec3 emittedLight = info.color.xyz * info.info.y;
             incommingLight += emittedLight * rayColor;
-            rayColor *= info.color.xyz;
+            rayColor *= info.info.z == 2.0 ? texture(uDiff, sphereUV).rgb : info.color.rgb;
         } else {
             break;
         }
