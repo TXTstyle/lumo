@@ -70,6 +70,13 @@ struct Sphere {
     glm::vec4 info;
 };
 
+struct Cube {
+    glm::vec4 min;
+    glm::vec4 max;
+    glm::vec4 color;
+    glm::vec4 info;
+};
+
 int main() {
     Vision::Renderer renderer;
     glm::uvec2 imgSize = {1920, 1080};
@@ -86,7 +93,7 @@ int main() {
     shader.SetInt("uTex", 0);
     shader.SetInt("uTexOld", 1);
 
-    Vision::Camera cam({0.0f, 4.0f, -14.0f}, 45.0f, 5.0f);
+    Vision::Camera cam({0.0f, 4.0f, -12.0f}, 45.0f, 5.0f);
 
     std::array<float, 20> verts = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f, //
@@ -104,44 +111,19 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    std::array<Sphere, 9> objects = {
+    std::array<Sphere, 4> objects = {
         Sphere{
-            {0.0f, 6.0f, 0.0f, 0.0f},
+            {0.0f, 7.0f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
             {0.6f, 15.0f, 0.0f, 0.0f},
         },
         Sphere{
-            {0.0f, -40.0f, 0.0f, 0.0f},
-            {0.9f, 0.9f, 0.9f, 1.0f},
-            {40.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Sphere{
-            {0.0f, 3.0f, 30.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {22.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Sphere{
-            {0.0f, 48.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {40.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Sphere{
-            {-45.0f, 3.0f, 0.0f, 0.0f},
-            {1.0f, 0.0f, 0.0f, 1.0f},
-            {40.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Sphere{
-            {45.0f, 3.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f, 1.0f},
-            {40.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Sphere{
-            {2.0f, 1.0f, 0.0f, 0.0f},
+            {2.0f, 3.0f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
             {1.0f, 0.0f, 2.0f, 0.0f},
         },
         Sphere{
-            {2.0f, 2.6f, 0.0f, 0.0f},
+            {2.0f, 4.6f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
             {0.6f, 0.0f, 2.0f, 0.0f},
         },
@@ -152,9 +134,51 @@ int main() {
         },
     };
 
+    std::array<Cube, 6> cubes = {
+        Cube{
+            {6.0f, -1.0f, -6.0f, 0.0f},
+            {-6.0f, 0.0f, 6.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f},
+        },
+        Cube{
+            {6.0f, 0.0f, 5.0f, 0.0f},
+            {-6.0f, 10.0f, 6.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f},
+        },
+        Cube{
+            {6.0f, 10.0f, -6.0f, 0.0f},
+            {-6.0f, 11.0f, 6.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f},
+        },
+        Cube{
+            {7.0f, 0.0f, -5.0f, 0.0f},
+            {6.0f, 10.0f, 5.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f},
+        },
+        Cube{
+            {-6.0f, 0.0f, -5.0f, 0.0f},
+            {-7.0f, 10.0f, 5.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f, 0.0f},
+        },
+        Cube{
+            {3.0f, 0.0f, -1.5f, 0.0f},
+            {1.0f, 2.0f, 1.5f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 0.0f},
+            {0.0f, 0.0f, 2.0f, 0.0f},
+        },
+    };
+
     Vision::ShaderStorage ssbo(objects.data(), objects.size() * sizeof(Sphere),
                                1);
     ssbo.Bind();
+    Vision::ShaderStorage ssbo_cubes(cubes.data(), cubes.size() * sizeof(Cube),
+                               2);
+    ssbo_cubes.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
     Vision::Texture textureOld(imgSize.x, imgSize.y, GL_RGBA32F, 1);
