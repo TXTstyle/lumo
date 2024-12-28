@@ -1,7 +1,18 @@
 # osen-raytracer
-Raytracer
+
+An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
 
 ![preview](./preview.png)
+
+## Features
+
+- Primitives:
+    - Spheres
+    - Cubes
+- Material:
+    - Diffuse maps
+    - Roughness maps
+    - Normal maps
 
 ## Build
 

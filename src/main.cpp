@@ -111,12 +111,7 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    std::array<Sphere, 4> objects = {
-        Sphere{
-            {0.0f, 7.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {0.6f, 15.0f, 0.0f, 0.0f},
-        },
+    std::array<Sphere, 3> objects = {
         Sphere{
             {2.0f, 3.0f, 0.0f, 0.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
@@ -134,7 +129,13 @@ int main() {
         },
     };
 
-    std::array<Cube, 6> cubes = {
+    std::array<Cube, 7> cubes = {
+        Cube{
+            {1.0f, 8.5f, -1.0f, 0.0f},
+            {-1.0f, 8.6f, 1.0f, 0.0f},
+            {1.0f, 1.0f, 1.0f, 1.0f},
+            {0.0f, 15.0f, 0.0f, 0.0f},
+        },
         Cube{
             {6.0f, -1.0f, -6.0f, 0.0f},
             {-6.0f, 0.0f, 6.0f, 0.0f},
@@ -204,7 +205,7 @@ int main() {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        if (fCounter > 200) {
+        if (fCounter > 10) {
             std::cout << "FPS: " << 1 / deltaTime << std::endl;
             fCounter = 0;
         } else {

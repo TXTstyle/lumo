@@ -219,6 +219,38 @@ HitInfo CalculateRayCollision(Ray ray) {
     return closestHit;
 }
 
+vec3 DisneyDiffuse(vec3 norm, vec3 viewDir, vec3 lightDir, vec3 albedo, float roughness) {
+    // Compute angles
+    float cosThetaI = max(dot(norm, lightDir), 0.0); // Incident angle
+    float cosThetaO = max(dot(norm, viewDir), 0.0); // Outgoing angle
+
+    // Half-vector
+    vec3 halfVector = normalize(lightDir + viewDir);
+
+    // Retro-reflection term
+    float retroReflection = (1.0 - cosThetaO) * (1.0 - cosThetaI);
+    retroReflection *= (1.0 - 0.5 * roughness);
+
+    // Disney Diffuse BRDF
+    vec3 diffuse = albedo / 3.141592;
+    float retroFactor = 1.0 + retroReflection * pow(1.0 - cosThetaI, 5.0) * roughness;
+    return diffuse * retroFactor;
+}
+
+vec3 SampleBRDF(vec3 norm, vec3 dir, vec2 uv, inout uint rngState) {
+    return normalize(norm + RandomDirection(rngState));
+}
+
+float CalculateBRDFPDF(vec3 norm, vec3 dir, vec3 sampleDir, vec2 uv) {
+    return max(0.0, dot(norm, sampleDir)) / 3.141592; // Cosine-weighted PDF
+}
+
+vec3 EvaluateBRDF(vec3 norm, vec3 viewDir, vec3 lightDir, vec2 uv) {
+    vec3 albedo = texture(uDiff, uv).rgb;
+    float roughness = texture(uRough, uv).r;
+    return DisneyDiffuse(norm, viewDir, lightDir, albedo, roughness);
+}
+
 vec3 Trace(Ray ray, inout uint rngState) {
     vec3 incommingLight = vec3(0);
     vec3 rayColor = vec3(1);
@@ -227,16 +259,21 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-            vec3 norm = info.info.z == 2.0 ? applyNormalMap(info.normal, info.uv) : info.normal;
-
-            vec3 diff = normalize(norm + RandomDirection(rngState));
-            vec3 spec = reflect(ray.dir, norm);
-            float rough = info.info.z == 2.0 ? 1 - texture(uRough, info.uv).r : info.info.z;
-            ray.dir = mix(diff, spec, rough);
-
+            vec3 norm = applyNormalMap(info.normal, info.uv);
             vec3 emittedLight = info.color.xyz * info.info.y;
+
             incommingLight += emittedLight * rayColor;
-            rayColor *= info.info.z == 2.0 ? texture(uDiff, info.uv).rgb : info.color.rgb;
+
+            // Diffuse
+            vec3 brdfSampleDir = SampleBRDF(norm, ray.dir, info.uv, rngState);
+            float brdfPDF = CalculateBRDFPDF(norm, ray.dir, brdfSampleDir, info.uv);
+            vec3 brdfValue = EvaluateBRDF(norm, ray.dir, brdfSampleDir, info.uv);
+
+            ray.dir = brdfSampleDir;
+            rayColor *= brdfValue * dot(norm, ray.dir) / brdfPDF;
+
+            // Terminate if ray contribution is negligible
+            if (rayColor == vec3(0)) break;
         } else {
             break;
         }
@@ -262,7 +299,7 @@ vec4 Render(ivec2 texelCoord) {
         Ray ray;
         ray.origin = uCamPos;
 
-        vec2 jitter = RandomPointInCircle(rngState) * 2;
+        vec2 jitter = RandomPointInCircle(rngState) * 2.5;
         vec2 jitteredUV = uv + jitter / vec2(uRes);
         vec3 jitteredDir = normalize(uCamMat * vec3(jitteredUV * scale, -1.0));
 
