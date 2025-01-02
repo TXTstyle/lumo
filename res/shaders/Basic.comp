@@ -15,27 +15,30 @@ layout(location = 4) uniform float uFOV;
 layout(location = 5) uniform float uMaxBounce;
 layout(location = 6) uniform float uRayPerPixel;
 
-struct Info {
-    vec2 uvA;
-    vec2 uvB;
-    vec2 uvC;
-    float useMat;
-    float roughness;
+struct MeshInfo {
+    uint startIndex;
+    uint size;
+    uint matID;
 };
 
 struct Triangle {
-    vec4 posA;
-    vec4 posB;
-    vec4 posC;
-    vec4 normalA;
-    vec4 normalB;
-    vec4 normalC;
-    vec4 color;
-    Info info;
+    vec3 posA;
+    vec3 posB;
+    vec3 posC;
+    vec3 normalA;
+    vec3 normalB;
+    vec3 normalC;
+    vec2 uvA;
+    vec2 uvB;
+    vec2 uvC;
 };
 
 layout(std430, binding = 1) buffer ssbo_trigs {
     Triangle trigs[];
+};
+
+layout(std430, binding = 2) buffer ssbo_mesh {
+    MeshInfo meshes[];
 };
 
 struct Ray {
@@ -49,9 +52,7 @@ struct HitInfo {
     vec3 hitPoint;
     vec2 uv;
     vec3 normal;
-    vec4 color;
-    float useMat;
-    float roughness;
+    uint matID;
 };
 
 float RandomValue(inout uint state) {
@@ -125,36 +126,34 @@ HitInfo RayTriangle(Ray ray, Triangle tri) {
 
     HitInfo info;
     info.didHit = det >= 1e-6 && dst >= 0 && u >= 0 && v >= 0 && w >= 0;
-    info.hitPoint = ray.origin + ray.dir * dst;
+    info.hitPoint = ray.origin + ray.dir * (dst - 1e-4);
     info.normal = normalize(tri.normalA * w + tri.normalB * u + tri.normalC * v).xyz;
     info.dst = dst;
-    info.useMat = tri.info.useMat;
-    info.roughness = tri.info.roughness;
-    info.color = tri.color;
-    info.uv = tri.info.uvA * w + tri.info.uvB * u + tri.info.uvC * v;
+    info.uv = tri.uvA * w + tri.uvB * u + tri.uvC * v;
 
     return info;
 }
 
 HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
-    closestHit.color = vec4(0.0);
     closestHit.dst = 1000.0;
     closestHit.didHit = false;
     closestHit.normal = vec3(0.0);
-    closestHit.useMat = 0.0;
+    closestHit.matID = 0;
     closestHit.uv = vec2(0.0);
     closestHit.hitPoint = vec3(0.0);
-    closestHit.roughness = 1.0;
 
-    for (int i = 0; i < trigs.length(); i++) {
-        // Intersect ray with a sphere
-        Triangle tri = trigs[i];
-        HitInfo info = RayTriangle(ray, tri);
+    for (uint i = 0; i < meshes.length(); i++) {
+        MeshInfo mesh = meshes[i];
+        for (uint j = mesh.startIndex; j < mesh.size + mesh.startIndex; j++) {
+            Triangle tri = trigs[j];
+            HitInfo info = RayTriangle(ray, tri);
 
-        // Output the result
-        if (info.didHit && info.dst < closestHit.dst) {
-            closestHit = info;
+            // Output the result
+            if (info.didHit && info.dst < closestHit.dst) {
+                closestHit = info;
+                closestHit.matID = mesh.matID;
+            }
         }
     }
 
@@ -201,14 +200,11 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-            vec3 emittedLight = info.color.rgb * info.color.a;
 
-            incommingLight += emittedLight * rayColor;
-
-            // Use color, i.e no material
-            if (info.useMat == 0.0) {
+            // No material, i.e: Light
+            if (info.matID == 0) {
                 ray.dir = RandomHemisphereDirection(info.normal, rngState);
-                rayColor *= info.color.rgb;
+                incommingLight += 10 * rayColor;
                 continue;
             }
 
@@ -224,7 +220,7 @@ vec3 Trace(Ray ray, inout uint rngState) {
             // Terminate if ray contribution is negligible
             if (rayColor == vec3(0)) break;
         } else {
-            incommingLight += vec3(0.5, 0.5, 0.7) * rayColor;
+            // incommingLight += vec3(0.4, 0.4, 0.8) * rayColor;
             break;
         }
     }

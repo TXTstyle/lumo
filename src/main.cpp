@@ -14,6 +14,7 @@
 #include "Camera.hpp"
 #include "ComputeShader.hpp"
 #include "Framebuffer.hpp"
+#include "Loader.hpp"
 #include "Renderer.hpp"
 #include "Shader.hpp"
 #include "VertexArray.hpp"
@@ -65,10 +66,9 @@ bool saveTextureToFile(GLuint textureID, int width, int height,
     }
 }
 
-
 int main() {
     Vision::Renderer renderer;
-    glm::uvec2 imgSize = {1920, 1080};
+    glm::uvec2 imgSize = {1280, 720};
     try {
         renderer.Init(imgSize, "dev");
     } catch (const std::exception& e) {
@@ -82,7 +82,7 @@ int main() {
     shader.SetInt("uTex", 0);
     shader.SetInt("uTexOld", 1);
 
-    Vision::Camera cam({0.0f, 4.0f, -12.0f}, 45.0f, 5.0f);
+    Vision::Camera cam({0.0f, 3.0f, -10.0f}, 45.0f, 5.0f);
 
     std::array<float, 20> verts = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f, //
@@ -100,29 +100,15 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    std::array<Triangle, 1> objects = {
-        Triangle{
-            {-1.0f, 0.0f, 1.0f, 0.0f},
-            {1.0f, 0.0f, 1.0f, 0.0f},
-            {-1.0f, 0.0f, -1.0, 0.0f},
-            {0.0f, 1.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f, 0.0f},
-            {0.3f, 0.3f, 0.6f, 0.0f},
-            Info {
-                {0.0f, 0.0f},
-                {1.0f, 0.0f},
-                {0.0f, 1.0f},
-                1.0f,
-                1.0f,
-            }
+    Loader loader("res/models/scene.obj");
 
-        },
-    };
-
-    Vision::ShaderStorage ssbo(objects.data(),
-                               objects.size() * sizeof(Triangle), 1);
+    Vision::ShaderStorage ssbo(loader.GetTrigs().data(),
+                               loader.GetTrigs().size() * sizeof(Triangle), 1);
     ssbo.Bind();
+    Vision::ShaderStorage meshesBuffer(
+        loader.GetMeshes().data(), loader.GetMeshes().size() * sizeof(MeshInfo),
+        2);
+    meshesBuffer.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
     Vision::Texture textureOld(imgSize.x, imgSize.y, GL_RGBA32F, 1);
