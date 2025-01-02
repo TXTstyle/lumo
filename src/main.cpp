@@ -21,6 +21,7 @@
 #include "VertexBufferLayout.hpp"
 #include "Texture.hpp"
 #include "ShaderStorage.hpp"
+#include "Triangle.hpp"
 
 // Function to save OpenGL texture to a PNG file
 bool saveTextureToFile(GLuint textureID, int width, int height,
@@ -64,18 +65,6 @@ bool saveTextureToFile(GLuint textureID, int width, int height,
     }
 }
 
-struct Sphere {
-    glm::vec4 origin;
-    glm::vec4 color;
-    glm::vec4 info;
-};
-
-struct Cube {
-    glm::vec4 min;
-    glm::vec4 max;
-    glm::vec4 color;
-    glm::vec4 info;
-};
 
 int main() {
     Vision::Renderer renderer;
@@ -111,75 +100,29 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    std::array<Sphere, 3> objects = {
-        Sphere{
-            {2.0f, 3.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {1.0f, 0.0f, 2.0f, 0.0f},
-        },
-        Sphere{
-            {2.0f, 4.6f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {0.6f, 0.0f, 2.0f, 0.0f},
-        },
-        Sphere{
-            {-2.0f, 2.0f, 2.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {2.0f, 0.0f, 1.0f, 0.0f},
-        },
-    };
-
-    std::array<Cube, 7> cubes = {
-        Cube{
-            {1.0f, 8.5f, -1.0f, 0.0f},
-            {-1.0f, 8.6f, 1.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 1.0f},
-            {0.0f, 15.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {6.0f, -1.0f, -6.0f, 0.0f},
-            {-6.0f, 0.0f, 6.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {6.0f, 0.0f, 5.0f, 0.0f},
-            {-6.0f, 10.0f, 6.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {6.0f, 10.0f, -6.0f, 0.0f},
-            {-6.0f, 11.0f, 6.0f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {7.0f, 0.0f, -5.0f, 0.0f},
-            {6.0f, 10.0f, 5.0f, 0.0f},
-            {1.0f, 0.0f, 0.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {-6.0f, 0.0f, -5.0f, 0.0f},
-            {-7.0f, 10.0f, 5.0f, 0.0f},
+    std::array<Triangle, 1> objects = {
+        Triangle{
+            {-1.0f, 0.0f, 1.0f, 0.0f},
+            {1.0f, 0.0f, 1.0f, 0.0f},
+            {-1.0f, 0.0f, -1.0, 0.0f},
             {0.0f, 1.0f, 0.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f, 0.0f},
-        },
-        Cube{
-            {3.0f, 0.0f, -1.5f, 0.0f},
-            {1.0f, 2.0f, 1.5f, 0.0f},
-            {1.0f, 1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 2.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f, 0.0f},
+            {0.3f, 0.3f, 0.6f, 0.0f},
+            Info {
+                {0.0f, 0.0f},
+                {1.0f, 0.0f},
+                {0.0f, 1.0f},
+                1.0f,
+                1.0f,
+            }
+
         },
     };
 
-    Vision::ShaderStorage ssbo(objects.data(), objects.size() * sizeof(Sphere),
-                               1);
+    Vision::ShaderStorage ssbo(objects.data(),
+                               objects.size() * sizeof(Triangle), 1);
     ssbo.Bind();
-    Vision::ShaderStorage ssbo_cubes(cubes.data(), cubes.size() * sizeof(Cube),
-                               2);
-    ssbo_cubes.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
     Vision::Texture textureOld(imgSize.x, imgSize.y, GL_RGBA32F, 1);
@@ -238,7 +181,7 @@ int main() {
         roughTex.Bind(2);
         normTex.Bind(3);
 
-        computeShader.Dispatch({imgSize.x/16, imgSize.y/16, 1});
+        computeShader.Dispatch({imgSize.x / 16, imgSize.y / 16, 1});
 
         // Render image quad
         renderer.Clear({0.0, 0.0, 0.0});

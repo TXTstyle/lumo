@@ -6,7 +6,7 @@ using namespace Vision;
 ShaderStorage::ShaderStorage(const void* data, uint32_t size, const uint32_t bindIdx) {
     glGenBuffers(1, &id);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, id);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_STATIC_READ);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIdx, id);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

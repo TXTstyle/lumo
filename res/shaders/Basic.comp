@@ -15,25 +15,27 @@ layout(location = 4) uniform float uFOV;
 layout(location = 5) uniform float uMaxBounce;
 layout(location = 6) uniform float uRayPerPixel;
 
-struct Sphere {
-    vec4 origin;
+struct Info {
+    vec2 uvA;
+    vec2 uvB;
+    vec2 uvC;
+    float useMat;
+    float roughness;
+};
+
+struct Triangle {
+    vec4 posA;
+    vec4 posB;
+    vec4 posC;
+    vec4 normalA;
+    vec4 normalB;
+    vec4 normalC;
     vec4 color;
-    vec4 info;
+    Info info;
 };
 
-layout(std430, binding = 1) buffer ssbo {
-    Sphere objects[];
-};
-
-struct Cube {
-    vec4 min;
-    vec4 max;
-    vec4 color;
-    vec4 info;
-};
-
-layout(std430, binding = 2) buffer ssbo_cube {
-    Cube cubes[];
+layout(std430, binding = 1) buffer ssbo_trigs {
+    Triangle trigs[];
 };
 
 struct Ray {
@@ -48,7 +50,8 @@ struct HitInfo {
     vec2 uv;
     vec3 normal;
     vec4 color;
-    vec4 info;
+    float useMat;
+    float roughness;
 };
 
 float RandomValue(inout uint state) {
@@ -82,18 +85,6 @@ vec2 RandomPointInCircle(inout uint rngState) {
     return pointOnCircle * sqrt(RandomValue(rngState));
 }
 
-vec2 getSphereUV(vec3 hitPoint, vec3 sphereCenter) {
-    vec3 localP = hitPoint - sphereCenter;
-    // Normalize the local point to ensure it's on the sphere surface
-    vec3 n = normalize(localP);
-
-    // Calculate spherical coordinates
-    float u = 0.5 + atan(n.z, n.x) / (2.0 * 3.14159);
-    float v = 0.5 - asin(n.y) / 3.14159;
-
-    return vec2(u, v);
-}
-
 vec3 applyNormalMap(vec3 norm, vec2 uv) {
     // Sample the normal map and decode it to tangent space
     vec3 normalMapColor = texture(uNorm, uv).rgb;
@@ -117,70 +108,30 @@ vec3 applyNormalMap(vec3 norm, vec2 uv) {
     return perturbedNormal;
 }
 
-HitInfo RaySphere(Ray ray, vec3 sphereCenter, float sphereRadius) {
-    HitInfo hitInfo;
-    hitInfo.didHit = false;
-    vec3 offsetRayOrigin = ray.origin - sphereCenter;
+HitInfo RayTriangle(Ray ray, Triangle tri) {
+    vec3 edgeAB = tri.posB.xyz - tri.posA.xyz;
+    vec3 edgeAC = tri.posC.xyz - tri.posA.xyz;
+    vec3 norm = cross(edgeAB, edgeAC);
+    vec3 ao = ray.origin - tri.posA.xyz;
+    vec3 dao = cross(ao, ray.dir);
 
-    float a = dot(ray.dir, ray.dir);
-    float b = 2 * dot(offsetRayOrigin, ray.dir);
-    float c = dot(offsetRayOrigin, offsetRayOrigin) - sphereRadius * sphereRadius;
+    float det = -dot(ray.dir, norm);
+    float invDet = 1 / det;
 
-    float discriminant = b * b - 4 * a * c;
+    float dst = dot(ao, norm) * invDet;
+    float u = dot(edgeAC, dao) * invDet;
+    float v = -dot(edgeAB, dao) * invDet;
+    float w = 1 - u - v;
 
-    if (discriminant >= 0) {
-        float dst = (-b - sqrt(discriminant)) / (2 * a);
-
-        if (dst >= 0) {
-            hitInfo.didHit = true;
-            hitInfo.dst = dst;
-            hitInfo.hitPoint = ray.origin + ray.dir * dst;
-            hitInfo.normal = normalize(hitInfo.hitPoint - sphereCenter);
-            hitInfo.uv = getSphereUV(hitInfo.hitPoint, sphereCenter);
-        }
-    }
-    return hitInfo;
-}
-
-HitInfo RayCube(Ray ray, Cube cube) {
     HitInfo info;
-    info.didHit = false;
-
-    vec3 invDir = 1.0 / ray.dir; // Inverse of the ray direction
-    vec3 t0s = (cube.min.xyz - ray.origin) * invDir;
-    vec3 t1s = (cube.max.xyz - ray.origin) * invDir;
-
-    vec3 tSmaller = min(t0s, t1s); // Take the smaller t for each axis
-    vec3 tLarger = max(t0s, t1s); // Take the larger t for each axis
-
-    float tMin = max(tSmaller.x, max(tSmaller.y, tSmaller.z)); // Maximum of the minimum t values
-    float tMax = min(tLarger.x, min(tLarger.y, tLarger.z)); // Minimum of the maximum t values
-
-    if (tMin <= tMax && tMax > 0.0) {
-        info.didHit = true;
-        info.dst = tMin;
-        info.hitPoint = ray.origin + ray.dir * (tMin - 0.00001);
-
-        // Determine which axis contributed to the closest hit
-        vec3 hitNormal = vec3(0.0);
-        vec2 uv = vec2(0.0);
-        if (tMin == tSmaller.x) {
-            hitNormal = vec3(-sign(ray.dir.x), 0.0, 0.0);
-            uv = (ray.origin + tMin * ray.dir).yz; // Project onto the YZ plane
-            uv = (uv - cube.min.yz) / (cube.max.yz - cube.min.yz);
-        } else if (tMin == tSmaller.y) {
-            hitNormal = vec3(0.0, -sign(ray.dir.y), 0.0);
-            uv = (ray.origin + tMin * ray.dir).xz; // Project onto the XZ plane
-            uv = (uv - cube.min.xz) / (cube.max.xz - cube.min.xz); // Normalize to [0, 1]
-        } else if (tMin == tSmaller.z) {
-            hitNormal = vec3(0.0, 0.0, -sign(ray.dir.z));
-            uv = (ray.origin + tMin * ray.dir).xy; // Project onto the XY plane
-            uv = (uv - cube.min.xy) / (cube.max.xy - cube.min.xy); // Normalize to [0, 1]
-        }
-
-        info.normal = normalize(hitNormal);
-        info.uv = uv;
-    }
+    info.didHit = det >= 1e-6 && dst >= 0 && u >= 0 && v >= 0 && w >= 0;
+    info.hitPoint = ray.origin + ray.dir * dst;
+    info.normal = normalize(tri.normalA * w + tri.normalB * u + tri.normalC * v).xyz;
+    info.dst = dst;
+    info.useMat = tri.info.useMat;
+    info.roughness = tri.info.roughness;
+    info.color = tri.color;
+    info.uv = tri.info.uvA * w + tri.info.uvB * u + tri.info.uvC * v;
 
     return info;
 }
@@ -189,30 +140,21 @@ HitInfo CalculateRayCollision(Ray ray) {
     HitInfo closestHit;
     closestHit.color = vec4(0.0);
     closestHit.dst = 1000.0;
+    closestHit.didHit = false;
+    closestHit.normal = vec3(0.0);
+    closestHit.useMat = 0.0;
+    closestHit.uv = vec2(0.0);
+    closestHit.hitPoint = vec3(0.0);
+    closestHit.roughness = 1.0;
 
-    for (int i = 0; i < objects.length(); i++) {
+    for (int i = 0; i < trigs.length(); i++) {
         // Intersect ray with a sphere
-        Sphere sphere = objects[i];
-        HitInfo info = RaySphere(ray, sphere.origin.xyz, sphere.info.x);
+        Triangle tri = trigs[i];
+        HitInfo info = RayTriangle(ray, tri);
 
         // Output the result
         if (info.didHit && info.dst < closestHit.dst) {
             closestHit = info;
-            closestHit.color = sphere.color;
-            closestHit.info = sphere.info;
-        }
-    }
-
-    for (int i = 0; i < cubes.length(); i++) {
-        // Intersect ray with a cube
-        Cube cube = cubes[i];
-        HitInfo info = RayCube(ray, cube);
-
-        // Output the result
-        if (info.didHit && info.dst < closestHit.dst) {
-            closestHit = info;
-            closestHit.color = cube.color;
-            closestHit.info = cube.info;
         }
     }
 
@@ -259,12 +201,19 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-            vec3 norm = applyNormalMap(info.normal, info.uv);
-            vec3 emittedLight = info.color.xyz * info.info.y;
+            vec3 emittedLight = info.color.rgb * info.color.a;
 
             incommingLight += emittedLight * rayColor;
 
+            // Use color, i.e no material
+            if (info.useMat == 0.0) {
+                ray.dir = RandomHemisphereDirection(info.normal, rngState);
+                rayColor *= info.color.rgb;
+                continue;
+            }
+
             // Diffuse
+            vec3 norm = applyNormalMap(info.normal, info.uv);
             vec3 brdfSampleDir = SampleBRDF(norm, ray.dir, info.uv, rngState);
             float brdfPDF = CalculateBRDFPDF(norm, ray.dir, brdfSampleDir, info.uv);
             vec3 brdfValue = EvaluateBRDF(norm, ray.dir, brdfSampleDir, info.uv);
@@ -275,6 +224,7 @@ vec3 Trace(Ray ray, inout uint rngState) {
             // Terminate if ray contribution is negligible
             if (rayColor == vec3(0)) break;
         } else {
+            incommingLight += vec3(0.5, 0.5, 0.7) * rayColor;
             break;
         }
     }
