@@ -1,6 +1,7 @@
 #include "Loader.hpp"
 #include "Triangle.hpp"
 #include <cstddef>
+#include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <loader/tiny_obj_loader.h>
 #include <stdexcept>
@@ -56,9 +57,9 @@ Loader::Loader(std::string path) {
             trig.posC = verts[i + 2].pos;
 
             // Normal
-            trig.normalA = verts[i + 0].normal;
-            trig.normalB = verts[i + 1].normal;
-            trig.normalC = verts[i + 2].normal;
+            glm::vec3 pq = trig.posA - trig.posC;
+            glm::vec3 pr = trig.posB - trig.posC;
+            trig.normal = glm::normalize(glm::cross(pq, pr));
 
             // UV
             trig.uvA = verts[i + 0].uv;

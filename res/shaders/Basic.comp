@@ -25,9 +25,7 @@ struct Triangle {
     vec3 posA;
     vec3 posB;
     vec3 posC;
-    vec3 normalA;
-    vec3 normalB;
-    vec3 normalC;
+    vec3 normal;
     vec2 uvA;
     vec2 uvB;
     vec2 uvC;
@@ -103,7 +101,7 @@ vec3 applyNormalMap(vec3 norm, vec2 uv) {
     }
 
     // Transform tangent-space normal to object/world space
-    mat3 TBN = mat3(tangent, bitangent, norm);
+    mat3 TBN = mat3(-tangent, -bitangent, norm);
     vec3 perturbedNormal = normalize(TBN * tangentNormal);
 
     return perturbedNormal;
@@ -126,10 +124,10 @@ HitInfo RayTriangle(Ray ray, Triangle tri) {
 
     HitInfo info;
     info.didHit = det >= 1e-6 && dst >= 0 && u >= 0 && v >= 0 && w >= 0;
-    info.hitPoint = ray.origin + ray.dir * (dst - 1e-4);
-    info.normal = normalize(tri.normalA * w + tri.normalB * u + tri.normalC * v).xyz;
-    info.dst = dst;
     info.uv = tri.uvA * w + tri.uvB * u + tri.uvC * v;
+    info.normal = normalize(tri.normal);
+    info.hitPoint = ray.origin + ray.dir * dst + info.normal * 1e-4;
+    info.dst = dst;
 
     return info;
 }
