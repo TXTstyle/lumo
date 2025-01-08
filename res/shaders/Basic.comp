@@ -202,7 +202,7 @@ vec3 Trace(Ray ray, inout uint rngState) {
             // No material, i.e: Light
             if (info.matID == 0) {
                 ray.dir = RandomHemisphereDirection(info.normal, rngState);
-                incommingLight += 10 * rayColor;
+                incommingLight += 5 * rayColor;
                 continue;
             }
 
@@ -261,7 +261,6 @@ void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
     vec4 result = Render(texelCoord);
-    result = vec4(pow(result.xyz, vec3(0.4545)), 1.0);
 
     imageStore(imgOutput, texelCoord, result);
 }

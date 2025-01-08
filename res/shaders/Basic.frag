@@ -11,18 +11,17 @@ uniform float uTime;
 
 void main() {
     vec3 texColor = texture(uTex, vTexCoords).rgb;
+
+    // reinhard tone mapping
+    vec3 mapped = texColor / (texColor + vec3(1.0));
+    // gamma correction 
+    mapped = pow(mapped, vec3(1.0 / 2.2));
+
     vec3 texColorOld = texture(uTexOld, vTexCoords).rgb;
 
     float weight = 1.0 / (uTime + 1);
-    vec3 texColorAvg = texColorOld * (1 - weight) + texColor * weight;
+    vec3 texColorAvg = texColorOld * (1 - weight) + mapped * weight;
 
-
-    vec3 res;
-    if (vTexCoords.x <= 0.5) {
-        res = texColor;
-    } else {
-        res = texColorOld;
-    }
 
     FragColor = vec4(texColorAvg, 1.0);
 }
