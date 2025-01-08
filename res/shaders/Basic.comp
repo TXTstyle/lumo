@@ -6,6 +6,7 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput;
 layout(binding = 1) uniform sampler2D uDiff;
 layout(binding = 2) uniform sampler2D uRough;
 layout(binding = 3) uniform sampler2D uNorm;
+layout(binding = 4) uniform sampler2D uHDRI;
 
 layout(location = 0) uniform float uTime;
 layout(location = 1) uniform ivec2 uRes;
@@ -82,6 +83,17 @@ vec2 RandomPointInCircle(inout uint rngState) {
     float angle = RandomValue(rngState) * 2 * 3.1415926;
     vec2 pointOnCircle = vec2(cos(angle), sin(angle));
     return pointOnCircle * sqrt(RandomValue(rngState));
+}
+
+vec2 directionToUV(vec3 dir) {
+    // Normalize the direction to ensure correctness
+    dir = normalize(dir);
+
+    // Calculate equirectangular UV coordinates
+    float u = atan(dir.z, dir.x) / (2.0 * 3.1415926) + 0.5;
+    float v = 0.5 - asin(dir.y) / 3.1415926;
+
+    return vec2(u, v);
 }
 
 vec3 applyNormalMap(vec3 norm, vec2 uv) {
@@ -218,7 +230,9 @@ vec3 Trace(Ray ray, inout uint rngState) {
             // Terminate if ray contribution is negligible
             if (rayColor == vec3(0)) break;
         } else {
-            // incommingLight += vec3(0.4, 0.4, 0.8) * rayColor;
+            vec2 uv = directionToUV(ray.dir);
+            vec3 hdriColor = texture(uHDRI, uv).rgb;
+            incommingLight += hdriColor * rayColor;
             break;
         }
     }

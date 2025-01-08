@@ -5,7 +5,7 @@ INCLUDE	:=	include
 SRC		:=	src
 BIN		:=	bin
 
-LIBS	:=	-lglfw -lGL
+LIBS	:=	-lglfw -lGL -lOpenEXR
 EXE		:=	main
 
 DEPS	:=	$(wildcard $(SRC)/*.c*)
@@ -13,11 +13,11 @@ OBJ		:=	$(patsubst $(SRC)/%.c*, $(BIN)/%.o, $(DEPS))
 
 $(BIN)/%.o: $(SRC)/%.cpp
 	mkdir -p $(BIN)
-	$(CXX) -c -o $@ $< $(FLAGS) -I$(INCLUDE)
+	$(CXX) -c -o $@ $< $(FLAGS) -I$(INCLUDE) -I/usr/include/Imath
 
 $(BIN)/$(EXE): $(OBJ)
 	mkdir -p $(BIN)
-	$(CXX) $(FLAGS) -I$(INCLUDE) -o $@ $^ $(LIBS) -fuse-ld=mold
+	$(CXX) $(FLAGS) -I$(INCLUDE) -I/usr/include/Imath -o $@ $^ $(LIBS) -fuse-ld=mold
 
 
 run: $(BIN)/$(EXE)

@@ -115,9 +115,11 @@ int main() {
     textureOld.Bind(1);
     Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F, 0);
     texture.Bind(0);
-    Vision::Texture diffTex("res/textures/wood_planks_diff_2k.png", false);
-    Vision::Texture roughTex("res/textures/wood_planks_rough_2k.png", false);
-    Vision::Texture normTex("res/textures/wood_planks_nor_gl_2k.png", true);
+    Vision::Texture diffTex("res/textures/wood_planks_diff_2k.png", GL_RGB8);
+    Vision::Texture roughTex("res/textures/wood_planks_rough_2k.png", GL_RGB8);
+    Vision::Texture normTex("res/textures/wood_planks_nor_gl_2k.png", GL_RGBA8);
+
+    // Vision::Texture envTex("res/textures/klippad_dawn_2_4k.exr", GL_RGBA32F);
 
     std::vector<uint32_t> attachments = {textureOld.GetID()};
 
@@ -166,6 +168,7 @@ int main() {
         diffTex.Bind(1);
         roughTex.Bind(2);
         normTex.Bind(3);
+        // envTex.Bind(4);
 
         computeShader.Dispatch({imgSize.x / 16, imgSize.y / 16, 1});
 
@@ -174,6 +177,7 @@ int main() {
         shader.Use();
         texture.Bind();
         textureOld.Bind();
+
 
         shader.SetFloat("uTime", totalFrames);
         shader.SetInt("uTex", 0);

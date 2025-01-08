@@ -5,15 +5,26 @@
 #include <iostream>
 #include <string>
 
+#define IMATH_HALF_NO_LOOKUP_TABLE
+#include <OpenEXR/ImfHeader.h>
+#include <OpenEXR/ImfArray.h>
+#include <OpenEXR/ImfRgbaFile.h>
+#include <vector>
+
 using namespace Vision;
 
-Texture::Texture(const std::string path, const bool alpha)
-    : width(0), height(0), format(GL_RGB), imgFormat(GL_RGB), wrapS(GL_REPEAT),
+Texture::Texture(const std::string path, const uint32_t format)
+    : width(0), height(0), format(format), imgFormat(GL_RGB), wrapS(GL_REPEAT),
       wrapT(GL_REPEAT), filterMin(GL_LINEAR), filterMax(GL_LINEAR) {
 
-    if (alpha) {
-        format = GL_RGBA8;
+    if (format == GL_RGBA8 || format == GL_RGBA32F) {
         imgFormat = GL_RGBA;
+    }
+
+    if (path.ends_with(".exr")) {
+        GenEXR(path, format);
+        std::cout << "Texture created, id: " << renderID << std::endl;
+        return;
     }
 
     int width, height, BPP;
@@ -23,6 +34,7 @@ Texture::Texture(const std::string path, const bool alpha)
     Generate(width, height, data);
 
     stbi_image_free(data);
+    std::cout << "Texture created, id: " << renderID << std::endl;
 }
 
 Texture::Texture(const uint32_t width, const uint32_t height,
@@ -46,7 +58,63 @@ Texture::~Texture() {
     std::cout << "Texture destroyed, id: " << renderID << std::endl;
 }
 
-void Texture::Bind(int index){
+void Texture::GenEXR(const std::string path, const uint32_t format) {
+    try {
+        // OpenEXR: Read the file
+        Imf::RgbaInputFile file(path.c_str());
+        Imath::Box2i dw = file.dataWindow();
+        width = dw.max.x - dw.min.x + 1;
+        height = dw.max.y - dw.min.y + 1;
+
+        // Allocate space for the pixels
+        std::vector<Imf::Rgba> pixels(width * height);
+
+        // Read pixel data
+        file.setFrameBuffer(pixels.data() - dw.min.x - dw.min.y * width, 1,
+                            width);
+        file.readPixels(dw.min.y, dw.max.y);
+
+        // Convert to OpenGL-compatible format (float RGBA) and flip vertically
+        // std::vector<float> glPixels(width * height * 4); // RGBA = 4 channels
+        // for (size_t y = 0; y < height; ++y) {
+        //     for (size_t x = 0; x < width; ++x) {
+        //         size_t srcIndex = y * width + x; // Source index
+        //         size_t dstIndex =
+        //             (height - 1 - y) * width + x; // Destination index (flipped)
+        //
+        //         glPixels[dstIndex * 4 + 0] = pixels[srcIndex].r; // Red
+        //         glPixels[dstIndex * 4 + 1] = pixels[srcIndex].g; // Green
+        //         glPixels[dstIndex * 4 + 2] = pixels[srcIndex].b; // Blue
+        //         glPixels[dstIndex * 4 + 3] = pixels[srcIndex].a; // Alpha
+        //     }
+        // }
+        std::vector<float> glPixels(width * height * 4); // RGBA = 4 channels
+        for (size_t i = 0; i < pixels.size(); ++i) {
+            glPixels[i * 4 + 0] = pixels[i].r; // Red
+            glPixels[i * 4 + 1] = pixels[i].g; // Green
+            glPixels[i * 4 + 2] = pixels[i].b; // Blue
+            glPixels[i * 4 + 3] = pixels[i].a; // Alpha
+        }
+
+        // Generate the texture
+        glGenTextures(1, &renderID);
+        glBindTexture(GL_TEXTURE_2D, renderID);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, imgFormat,
+                     GL_FLOAT, glPixels.data());
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error reading EXR file " << path << ": " << e.what()
+                  << std::endl;
+    }
+}
+
+void Texture::Bind(int index) {
     if (index != -1) {
         this->index = index;
     }
@@ -54,7 +122,7 @@ void Texture::Bind(int index){
     glBindTexture(GL_TEXTURE_2D, renderID);
 }
 
-void Texture::CopyTo(Texture &texture) {
+void Texture::CopyTo(Texture& texture) {
     glCopyImageSubData(renderID, GL_TEXTURE_2D, 0, 0, 0, 0, texture.GetID(),
                        GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
 }

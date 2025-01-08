@@ -15,9 +15,10 @@ class Texture {
     uint32_t index = 0;
 
     void Generate(uint32_t width, uint32_t height, unsigned char* data);
+    void GenEXR(const std::string path, const uint32_t format);
 
   public:
-    Texture(const std::string path, const bool alpha);
+    Texture(const std::string path, const uint32_t format);
     Texture(const uint32_t width, const uint32_t height, const uint32_t format, uint32_t index);
     ~Texture();
 

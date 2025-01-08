@@ -15,13 +15,12 @@ void main() {
     // reinhard tone mapping
     vec3 mapped = texColor / (texColor + vec3(1.0));
     // gamma correction 
-    mapped = pow(mapped, vec3(1.0 / 2.2));
+    mapped = pow(mapped, vec3(1.0 / 2));
 
     vec3 texColorOld = texture(uTexOld, vTexCoords).rgb;
 
     float weight = 1.0 / (uTime + 1);
     vec3 texColorAvg = texColorOld * (1 - weight) + mapped * weight;
-
 
     FragColor = vec4(texColorAvg, 1.0);
 }

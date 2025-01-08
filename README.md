@@ -11,6 +11,7 @@ An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
     - Diffuse maps
     - Roughness maps
     - Normal maps
+- HDRI lighting
 
 ## Build
 
@@ -26,9 +27,17 @@ make
 - `clang`
 - `GLFW3`
 - `GLM`
+- `OpenEXR`
+    - `Imath`
 
 ## Run
 
 ```bash
 ./bin/main
 ```
+
+# Previews
+
+## HDRI
+
+![hdri-preview](./hdri-preview.png)
