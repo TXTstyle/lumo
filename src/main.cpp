@@ -119,7 +119,7 @@ int main() {
     Vision::Texture roughTex("res/textures/wood_planks_rough_2k.png", GL_RGB8);
     Vision::Texture normTex("res/textures/wood_planks_nor_gl_2k.png", GL_RGBA8);
 
-    // Vision::Texture envTex("res/textures/klippad_dawn_2_4k.exr", GL_RGBA32F);
+    // Vision::Texture envTex("res/textures/klippad_dawn_2_2k.exr", GL_RGBA32F);
 
     std::vector<uint32_t> attachments = {textureOld.GetID()};
 
