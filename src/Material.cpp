@@ -5,8 +5,8 @@ Material::Material(uint32_t id, std::string diffPath, std::string roughPath,
                    std::string normPath, uint32_t diffFormat,
                    uint32_t roughFormat, uint32_t normFormat,
                    float emissionStrength)
-    : diff(diffPath, diffFormat), rough(roughPath, roughFormat),
-      norm(normPath, normFormat), emissionStrength(emissionStrength), id(id) {
+    : id(id), diff(diffPath, diffFormat), rough(roughPath, roughFormat),
+      norm(normPath, normFormat), emissionStrength(emissionStrength) {
     diff.Bind(id * 3 + 0);
     rough.Bind(id * 3 + 1);
     norm.Bind(id * 3 + 2);
@@ -18,9 +18,9 @@ Material::~Material() {
 }
 
 void Material::Bind() {
-    diff.Bind(id * 3 + 0);
-    rough.Bind(id * 3 + 1);
-    norm.Bind(id * 3 + 2);
+    diff.Bind();
+    rough.Bind();
+    norm.Bind();
 }
 MatData Material::GetData() {
     MatData data;

@@ -15,6 +15,7 @@
 #include "ComputeShader.hpp"
 #include "Framebuffer.hpp"
 #include "Loader.hpp"
+#include "Material.hpp"
 #include "Renderer.hpp"
 #include "Shader.hpp"
 #include "VertexArray.hpp"
@@ -100,7 +101,7 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    Loader loader("res/models/scene.obj");
+    Loader loader("res/models/hdri-test.obj");
 
     Vision::ShaderStorage ssbo(loader.GetTrigs().data(),
                                loader.GetTrigs().size() * sizeof(Triangle), 1);
@@ -111,15 +112,30 @@ int main() {
     meshesBuffer.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
+    computeShader.SetIntArrayInit("uTex");
     Vision::Texture textureOld(imgSize.x, imgSize.y, GL_RGBA32F, 1);
     textureOld.Bind(1);
     Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F, 0);
     texture.Bind(0);
-    Vision::Texture diffTex("res/textures/wood_planks_diff_2k.png", GL_RGB8);
-    Vision::Texture roughTex("res/textures/wood_planks_rough_2k.png", GL_RGB8);
-    Vision::Texture normTex("res/textures/wood_planks_nor_gl_2k.png", GL_RGBA8);
 
-    // Vision::Texture envTex("res/textures/klippad_dawn_2_2k.exr", GL_RGBA32F);
+    Material planks(0, "res/textures/wood_planks_diff_2k.png",
+                    "res/textures/wood_planks_rough_2k.png",
+                    "res/textures/wood_planks_nor_gl_2k.png", //
+                    GL_RGB16F, GL_R16F, GL_RGB16F);
+    Material concrete(1, "res/textures/patterned_concrete_pavers_diff_2k.png",
+                      "res/textures/patterned_concrete_pavers_rough_2k.png",
+                      "res/textures/patterned_concrete_pavers_nor_gl_2k.png", //
+                      GL_RGB16F, GL_R16F, GL_RGB16F);
+
+    std::array<MatData, 2> mats = {
+        planks.GetData(),
+        concrete.GetData(),
+    };
+
+    Vision::ShaderStorage matsBuffer(mats.data(), mats.size() * sizeof(MatData),
+                                     3);
+
+    Vision::Texture envTex("res/textures/klippad_dawn_2_2k.exr", GL_RGBA32F);
 
     std::vector<uint32_t> attachments = {textureOld.GetID()};
 
@@ -165,10 +181,8 @@ int main() {
         computeShader.SetFloat("uRayPerPixel", 75);
         computeShader.SetVec3f("uCamPos", cam.getPos());
         computeShader.SetVec2i("uRes", imgSize);
-        diffTex.Bind(1);
-        roughTex.Bind(2);
-        normTex.Bind(3);
-        // envTex.Bind(4);
+        planks.Bind();
+        envTex.Bind(31);
 
         computeShader.Dispatch({imgSize.x / 16, imgSize.y / 16, 1});
 
@@ -177,7 +191,6 @@ int main() {
         shader.Use();
         texture.Bind();
         textureOld.Bind();
-
 
         shader.SetFloat("uTime", totalFrames);
         shader.SetInt("uTex", 0);

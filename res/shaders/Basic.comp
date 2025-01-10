@@ -202,7 +202,7 @@ vec3 SampleBRDF(vec3 norm, vec3 dir, vec2 uv, inout uint rngState) {
 }
 
 float CalculateBRDFPDF(vec3 norm, vec3 dir, vec3 sampleDir, vec2 uv) {
-    return max(0.0, dot(norm, sampleDir)) / 3.141592; // Cosine-weighted PDF
+    return max(0.0001, dot(norm, sampleDir)) / 3.141592; // Cosine-weighted PDF
 }
 
 vec3 EvaluateBRDF(vec3 norm, vec3 viewDir, vec3 lightDir, vec3 albedo, float roughness) {
@@ -218,7 +218,7 @@ vec3 Trace(Ray ray, inout uint rngState) {
         if (info.didHit) {
             ray.origin = info.hitPoint;
             MatInfo mat = mats[info.matID];
-            vec3 albedo = texture(uTex[mat.diffIndex], info.uv).rgb;
+            vec3 albedo = texture(uTex[mat.diffIndex], info.uv).rgb * (mat.emissionStrength + 1);
             float rough = texture(uTex[mat.roughIndex], info.uv).r;
             vec3 normColor = texture(uTex[mat.normIndex], info.uv).rgb;
             incommingLight += mat.emissionStrength * rayColor;
@@ -262,7 +262,7 @@ vec4 Render(ivec2 texelCoord) {
         Ray ray;
         ray.origin = uCamPos;
 
-        vec2 jitter = RandomPointInCircle(rngState) * 2.5;
+        vec2 jitter = RandomPointInCircle(rngState) * 2;
         vec2 jitteredUV = uv + jitter / vec2(uRes);
         vec3 jitteredDir = normalize(uCamMat * vec3(jitteredUV * scale, -1.0));
 
