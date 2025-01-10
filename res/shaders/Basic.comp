@@ -3,10 +3,9 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
-layout(binding = 1) uniform sampler2D uDiff;
-layout(binding = 2) uniform sampler2D uRough;
-layout(binding = 3) uniform sampler2D uNorm;
-layout(binding = 4) uniform sampler2D uHDRI;
+
+layout(binding = 1) uniform sampler2D uTex[31];
+layout(binding = 31) uniform sampler2D uHDRI;
 
 layout(location = 0) uniform float uTime;
 layout(location = 1) uniform ivec2 uRes;
@@ -32,12 +31,23 @@ struct Triangle {
     vec2 uvC;
 };
 
+struct MatInfo {
+    uint diffIndex;
+    uint roughIndex;
+    uint normIndex;
+    float emissionStrength;
+};
+
 layout(std430, binding = 1) buffer ssbo_trigs {
     Triangle trigs[];
 };
 
 layout(std430, binding = 2) buffer ssbo_mesh {
     MeshInfo meshes[];
+};
+
+layout(std430, binding = 3) buffer ssbo_mats {
+    MatInfo mats[];
 };
 
 struct Ray {
@@ -96,10 +106,9 @@ vec2 directionToUV(vec3 dir) {
     return vec2(u, v);
 }
 
-vec3 applyNormalMap(vec3 norm, vec2 uv) {
+vec3 applyNormalMap(vec3 norm, vec3 normColor) {
     // Sample the normal map and decode it to tangent space
-    vec3 normalMapColor = texture(uNorm, uv).rgb;
-    vec3 tangentNormal = normalize(normalMapColor * 2.0 - 1.0);
+    vec3 tangentNormal = normalize(normColor * 2.0 - 1.0);
 
     // Calculate the TBN matrix
     vec3 tangent, bitangent;
@@ -196,9 +205,7 @@ float CalculateBRDFPDF(vec3 norm, vec3 dir, vec3 sampleDir, vec2 uv) {
     return max(0.0, dot(norm, sampleDir)) / 3.141592; // Cosine-weighted PDF
 }
 
-vec3 EvaluateBRDF(vec3 norm, vec3 viewDir, vec3 lightDir, vec2 uv) {
-    vec3 albedo = texture(uDiff, uv).rgb;
-    float roughness = texture(uRough, uv).r;
+vec3 EvaluateBRDF(vec3 norm, vec3 viewDir, vec3 lightDir, vec3 albedo, float roughness) {
     return DisneyDiffuse(norm, viewDir, lightDir, albedo, roughness);
 }
 
@@ -210,19 +217,17 @@ vec3 Trace(Ray ray, inout uint rngState) {
         HitInfo info = CalculateRayCollision(ray);
         if (info.didHit) {
             ray.origin = info.hitPoint;
-
-            // No material, i.e: Light
-            if (info.matID == 0) {
-                ray.dir = RandomHemisphereDirection(info.normal, rngState);
-                incommingLight += 5 * rayColor;
-                continue;
-            }
+            MatInfo mat = mats[info.matID];
+            vec3 albedo = texture(uTex[mat.diffIndex], info.uv).rgb;
+            float rough = texture(uTex[mat.roughIndex], info.uv).r;
+            vec3 normColor = texture(uTex[mat.normIndex], info.uv).rgb;
+            incommingLight += mat.emissionStrength * rayColor;
 
             // Diffuse
-            vec3 norm = applyNormalMap(info.normal, info.uv);
+            vec3 norm = applyNormalMap(info.normal, normColor);
             vec3 brdfSampleDir = SampleBRDF(norm, ray.dir, info.uv, rngState);
             float brdfPDF = CalculateBRDFPDF(norm, ray.dir, brdfSampleDir, info.uv);
-            vec3 brdfValue = EvaluateBRDF(norm, ray.dir, brdfSampleDir, info.uv);
+            vec3 brdfValue = EvaluateBRDF(norm, ray.dir, brdfSampleDir, albedo, rough);
 
             ray.dir = brdfSampleDir;
             rayColor *= brdfValue * dot(norm, ray.dir) / brdfPDF;

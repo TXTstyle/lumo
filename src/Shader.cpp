@@ -133,10 +133,10 @@ void Shader::SetMat4f(const std::string& name, const glm::mat4& matrix,
 }
 
 void Shader::SetIntArrayInit(const std::string& name, bool useShader) {
-    int samplers[32];
-    for (int i = 0; i < 32; i++)
+    int samplers[31];
+    for (int i = 0; i < 31; i++)
         samplers[i] = i;
-    SetIntArray(name, 32, samplers, useShader);
+    SetIntArray(name, 31, samplers, useShader);
 }
 
 void Shader::checkErrors(uint32_t object, std::string type) {

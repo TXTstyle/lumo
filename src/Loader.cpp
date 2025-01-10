@@ -72,7 +72,16 @@ Loader::Loader(std::string path) {
 
         mesh.startIndex = currentFirst;
         mesh.size = trigCount;
-        mesh.matID = shape.name == "light" ? 0 : 1;
+
+        // convert matID in mesh name to int
+        uint32_t matID = shape.name.at(0) - '0';
+
+        if (matID >= 10) {
+            throw std::runtime_error(std::string("MatID of mesh not vaild: ") +
+                                     shape.name);
+        }
+
+        mesh.matID = matID;
 
         currentFirst += mesh.size;
         meshes.push_back(mesh);

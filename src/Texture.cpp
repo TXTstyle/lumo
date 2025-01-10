@@ -21,6 +21,10 @@ Texture::Texture(const std::string path, const uint32_t format)
         imgFormat = GL_RGBA;
     }
 
+    if (format == GL_R16F) {
+        imgFormat = GL_RED;
+    }
+
     if (path.ends_with(".exr")) {
         GenEXR(path, format);
         std::cout << "Texture created, id: " << renderID << std::endl;
@@ -75,19 +79,6 @@ void Texture::GenEXR(const std::string path, const uint32_t format) {
         file.readPixels(dw.min.y, dw.max.y);
 
         // Convert to OpenGL-compatible format (float RGBA) and flip vertically
-        // std::vector<float> glPixels(width * height * 4); // RGBA = 4 channels
-        // for (size_t y = 0; y < height; ++y) {
-        //     for (size_t x = 0; x < width; ++x) {
-        //         size_t srcIndex = y * width + x; // Source index
-        //         size_t dstIndex =
-        //             (height - 1 - y) * width + x; // Destination index (flipped)
-        //
-        //         glPixels[dstIndex * 4 + 0] = pixels[srcIndex].r; // Red
-        //         glPixels[dstIndex * 4 + 1] = pixels[srcIndex].g; // Green
-        //         glPixels[dstIndex * 4 + 2] = pixels[srcIndex].b; // Blue
-        //         glPixels[dstIndex * 4 + 3] = pixels[srcIndex].a; // Alpha
-        //     }
-        // }
         std::vector<float> glPixels(width * height * 4); // RGBA = 4 channels
         for (size_t i = 0; i < pixels.size(); ++i) {
             glPixels[i * 4 + 0] = pixels[i].r; // Red
