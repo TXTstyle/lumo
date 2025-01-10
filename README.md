@@ -23,19 +23,19 @@ make
 
 ### Dependencies
 
-- `mold`
-- `clang`
+- `CMake`
 - `GLFW3`
 - `GLM`
 - `OpenEXR`
     - `Imath`
 
 <details>
-    <summary>Arch</summary>
+<summary>Arch</summary>
 
-    ```bash
-    sudo pacman -S mold clang glfw glm openexr imath
-    ```
+```bash
+sudo pacman -S cmake glfw glm openexr imath
+```
+
 </details>
 
 ## Run
