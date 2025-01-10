@@ -1,7 +1,7 @@
 #include "Texture.hpp"
 #include "stb/stb_image.h"
 #include <cstdint>
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include <iostream>
 #include <string>
 

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <glm/glm.hpp>
-#include <glad/glad.h>
+#include "glad/glad.h"
 
 namespace Vision {
 class ComputeShader {

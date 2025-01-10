@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <string>
-#include <glad/glad.h>
+#include "glad/glad.h"
 
 namespace Vision {
 class Texture {
