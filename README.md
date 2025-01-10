@@ -7,7 +7,7 @@ An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
 ## Features
 
 - OBJ scene loading
-- Material:
+- Material system:
     - Diffuse maps
     - Roughness maps
     - Normal maps
