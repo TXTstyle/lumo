@@ -16,7 +16,7 @@ An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
 ## Build
 
 ```bash
-git clone https://github.com/IndaPlus24/osen-raytracer.git
+git clone git@github.com:IndaPlus24/osen-raytracer.git
 cd osen-raytracer
 make
 ```
@@ -30,10 +30,24 @@ make
 - `OpenEXR`
     - `Imath`
 
+<details>
+    <summary>Arch</summary>
+
+    ```bash
+    sudo pacman -S mold clang glfw glm openexr imath
+    ```
+</details>
+
 ## Run
 
 ```bash
-./bin/main
+./build/bin/Geisli
+```
+
+Or 
+
+```bash
+make run
 ```
 
 # Previews
