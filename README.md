@@ -55,3 +55,7 @@ make run
 ## HDRI
 
 ![hdri-preview](./hdri-preview.png)
+
+## Materials
+
+![materials-preview](./materials-preview.png)
