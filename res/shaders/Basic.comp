@@ -1,10 +1,13 @@
 #version 450 core
+#extension GL_ARB_bindless_texture : enable
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
-layout(binding = 1) uniform sampler2D uTex[31];
+layout(std430, binding = 4) buffer ssbo_textures {
+    uvec2 textureSamplerers[];
+};
 layout(binding = 31) uniform sampler2D uHDRI;
 
 layout(location = 0) uniform float uTime;
@@ -122,7 +125,7 @@ vec3 applyNormalMap(vec3 norm, vec3 normColor) {
     }
 
     // Transform tangent-space normal to object/world space
-    mat3 TBN = mat3(-tangent, -bitangent, norm);
+    mat3 TBN = mat3(tangent, bitangent, norm);
     vec3 perturbedNormal = normalize(TBN * tangentNormal);
 
     return perturbedNormal;
@@ -218,10 +221,9 @@ vec3 Trace(Ray ray, inout uint rngState) {
         if (info.didHit) {
             ray.origin = info.hitPoint;
             MatInfo mat = mats[info.matID];
-            vec3 albedo = texture(uTex[mat.diffIndex], info.uv).rgb * (mat.emissionStrength + 1);
-            float rough = texture(uTex[mat.roughIndex], info.uv).r;
-            vec3 normColor = texture(uTex[mat.normIndex], info.uv).rgb;
-            incommingLight += mat.emissionStrength * rayColor;
+            vec3 albedo = texture(sampler2D(textureSamplerers[mat.diffIndex]), info.uv).rgb;
+            vec3 normColor = texture(sampler2D(textureSamplerers[mat.normIndex]), info.uv).rgb;
+            float rough = texture(sampler2D(textureSamplerers[mat.roughIndex]), info.uv).r;
 
             // Diffuse
             vec3 norm = applyNormalMap(info.normal, normColor);
@@ -231,6 +233,8 @@ vec3 Trace(Ray ray, inout uint rngState) {
 
             ray.dir = brdfSampleDir;
             rayColor *= brdfValue * dot(norm, ray.dir) / brdfPDF;
+
+            incommingLight += mat.emissionStrength * rayColor;
 
             // Terminate if ray contribution is negligible
             if (rayColor == vec3(0)) break;

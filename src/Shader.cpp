@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "Shader.hpp"
 
@@ -46,9 +47,7 @@ Shader::Shader(const char* vShaderFile, const char* fShaderFile,
             gShaderFile != nullptr ? gShaderCode : nullptr);
 }
 
-void Shader::Use() const {
-    glUseProgram(RenderID);
-}
+void Shader::Use() const { glUseProgram(RenderID); }
 
 void Shader::Compile(const char* vertexSrc, const char* fragSrc,
                      const char* geoSrc) {
@@ -137,6 +136,21 @@ void Shader::SetIntArrayInit(const std::string& name, bool useShader) {
     for (int i = 0; i < 31; i++)
         samplers[i] = i;
     SetIntArray(name, 31, samplers, useShader);
+}
+
+void Shader::SetHandleui64ARB(const std::string& name, uint64_t value,
+                              bool useShader) {
+    if (useShader)
+        this->Use();
+    glUniformHandleui64ARB(glGetUniformLocation(RenderID, name.c_str()), value);
+}
+
+void Shader::SetHandleui64vARB(const std::string& name,
+                               std::vector<uint64_t>& values, bool useShader) {
+    if (useShader)
+        this->Use();
+    glUniformHandleui64vARB(glGetUniformLocation(RenderID, name.c_str()),
+                            values.size(), values.data());
 }
 
 void Shader::checkErrors(uint32_t object, std::string type) {
