@@ -6,6 +6,7 @@
 #include <loader/tiny_obj_loader.h>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 struct Vertex {
     glm::vec3 pos;
@@ -75,6 +76,7 @@ Loader::Loader(std::string path) {
 
         // convert matID in mesh name to int
         uint32_t matID = shape.name.at(0) - '0';
+        std::cout << shape.name << ", matID: " << matID << std::endl;
 
         if (matID >= 10) {
             throw std::runtime_error(std::string("MatID of mesh not vaild: ") +

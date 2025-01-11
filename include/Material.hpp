@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Texture.hpp"
+#include "BindlessTexture.hpp"
 #include <cstdint>
 #include <string>
+#include <vector>
 
 struct alignas(4) MatData {
     uint32_t diffIndex;
@@ -14,15 +15,17 @@ struct alignas(4) MatData {
 class Material {
   private:
     uint32_t id;
+    MatData data;
 
-    Vision::Texture diff;
-    Vision::Texture rough;
-    Vision::Texture norm;
+    Vision::BindlessTexture rough;
+    Vision::BindlessTexture norm;
+    Vision::BindlessTexture diff;
     float emissionStrength = 0;
 
   public:
     Material(uint32_t id, std::string diffPath, std::string roughPath,
-             std::string normPath, uint32_t diffFormat, uint32_t roughFormat, uint32_t normFormat, float emissionStrength = 0);
+             std::string normPath, uint32_t diffFormat, uint32_t roughFormat,
+             uint32_t normFormat, float emissionStrength = 0);
     Material(Material&&) = default;
     Material(const Material&) = default;
     Material& operator=(Material&&) = default;
@@ -30,7 +33,7 @@ class Material {
     ~Material();
 
     inline uint32_t GetId() { return id; }
-    void Bind();
+    void PushHandles(std::vector<uint64_t>& vec);
 
-    MatData GetData();
+    inline MatData GetData() { return data; }
 };

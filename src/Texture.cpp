@@ -78,7 +78,7 @@ void Texture::GenEXR(const std::string path, const uint32_t format) {
                             width);
         file.readPixels(dw.min.y, dw.max.y);
 
-        // Convert to OpenGL-compatible format (float RGBA) and flip vertically
+        // Convert to OpenGL-compatible format
         std::vector<float> glPixels(width * height * 4); // RGBA = 4 channels
         for (size_t i = 0; i < pixels.size(); ++i) {
             glPixels[i * 4 + 0] = pixels[i].r; // Red
@@ -96,6 +96,9 @@ void Texture::GenEXR(const std::string path, const uint32_t format) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, imgFormat,
                      GL_FLOAT, glPixels.data());
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                        GL_LINEAR_MIPMAP_LINEAR);
 
         glBindTexture(GL_TEXTURE_2D, 0);
 

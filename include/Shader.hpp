@@ -2,6 +2,7 @@
 
 #include "glad/glad.h"
 #include <string>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -19,7 +20,8 @@ class Shader {
     void checkErrors(uint32_t object, std::string type);
 
   public:
-    Shader(const char* vShaderFile, const char* fShaderFile, const char* gShaderFile = nullptr);
+    Shader(const char* vShaderFile, const char* fShaderFile,
+           const char* gShaderFile = nullptr);
 
     void Use() const;
     inline uint32_t& GetID() { return RenderID; }
@@ -41,5 +43,11 @@ class Shader {
                   bool useShader = false);
 
     void SetIntArrayInit(const std::string& name, bool useShader = true);
+
+    void SetHandleui64ARB(const std::string& name, uint64_t value,
+                          bool useShader = true);
+    void SetHandleui64vARB(const std::string& name,
+                                   std::vector<uint64_t>& values,
+                                   bool useShader);
 };
 } // namespace Vision
