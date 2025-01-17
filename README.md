@@ -1,4 +1,4 @@
-# osen-raytracer
+# Lumo
 
 An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
 
@@ -16,8 +16,8 @@ An OpenGl-based Raytracer, with Disney's principled BRDF diffuse.
 ## Build
 
 ```bash
-git clone git@github.com:IndaPlus24/osen-raytracer.git
-cd osen-raytracer
+git clone git@github.com:TXTstyle/lumo.git
+cd lumo
 make
 ```
 
@@ -41,7 +41,7 @@ sudo pacman -S cmake glfw glm openexr imath
 ## Run
 
 ```bash
-./build/bin/Geisli
+./build/bin/Lumo
 ```
 
 Or 

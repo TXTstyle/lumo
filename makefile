@@ -8,4 +8,4 @@ setup:
 
 run:
 	cmake --build ./build
-	./build/bin/Geisli
+	./build/bin/Lumo
