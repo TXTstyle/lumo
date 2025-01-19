@@ -1,0 +1,39 @@
+width = 1280
+height = 720
+gamma = 2.2
+bounces = 10
+samples = 75
+output_path = "./preview.png"
+
+[Camera]
+fov = 45.0
+pos = { x = 0.0, y = 3.0, z = -10.0 }
+
+[Enviroment]
+path = "res/textures/klippad_dawn_2_2k.exr"
+
+[Mesh]
+path = "res/models/scene-2.obj"
+
+[Materials]
+order = ["Plaster", "Tiles", "Concrete", "Planks"]
+
+[Materials.Planks]
+diffuse = { path = "res/textures/wood_planks_diff_2k.png", format = "RGB8" }
+roughness = { path = "res/textures/wood_planks_rough_2k.png", format = "R8" }
+normal = { path = "res/textures/wood_planks_nor_gl_2k.png", format = "RGB8" }
+
+[Materials.Tiles]
+diffuse = { path = "res/textures/long_white_tiles_diff_2k.png", format = "RGB8" }
+roughness = { path = "res/textures/long_white_tiles_rough_2k.png", format = "R8" }
+normal = { path = "res/textures/long_white_tiles_nor_gl_2k.png", format = "RGB8" }
+
+[Materials.Plaster]
+diffuse = { path = "res/textures/painted_plaster_wall_diff_2k.png", format = "RGB8" }
+roughness = { path = "res/textures/painted_plaster_wall_rough_2k.png", format = "R8" }
+normal = { path = "res/textures/painted_plaster_wall_nor_gl_2k.png", format = "RGB8" }
+
+[Materials.Concrete]
+diffuse = { path = "res/textures/patterned_concrete_pavers_diff_2k.png", format = "RGB8" }
+roughness = { path = "res/textures/patterned_concrete_pavers_rough_2k.png", format = "R8" }
+normal = { path = "res/textures/patterned_concrete_pavers_nor_gl_2k.png", format = "RGB8" }
