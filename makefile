@@ -8,4 +8,4 @@ setup:
 
 run:
 	cmake --build ./build
-	./build/bin/Lumo
+	./build/bin/Lumo ./scene.toml
