@@ -6,6 +6,35 @@
 
 using namespace Vision;
 
+BindlessTexture& BindlessTexture::operator=(BindlessTexture&& other) noexcept {
+    if (this != &other) {
+        glMakeTextureHandleNonResidentARB(handle);
+        glDeleteTextures(1, &textureID);
+
+        textureID = other.textureID;
+        handle = other.handle;
+
+        other.textureID = 0;
+        other.handle = 0;
+        std::cout << "[BINDLESS TEXTURE] moved, id: " << textureID
+                  << ", handle: " << handle << std::endl;
+    }
+    return *this;
+}
+
+BindlessTexture::BindlessTexture(BindlessTexture& other) noexcept
+    : textureID(other.textureID), handle(0) {
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    // Duplicate the OpenGL state of the other object's texture
+    handle = glGetTextureHandleARB(textureID);
+    glMakeTextureHandleResidentARB(handle);
+
+    std::cout << "[BINDLESS TEXTURE] copied, id: " << textureID
+              << ", handle: " << handle << std::endl;
+}
+
 BindlessTexture::BindlessTexture(std::string path, uint32_t format) {
     uint32_t imgFormat = GL_RGB;
 
@@ -33,13 +62,12 @@ BindlessTexture::BindlessTexture(std::string path, uint32_t format) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-
     stbi_image_free(data);
 
     handle = glGetTextureHandleARB(textureID);
     glMakeTextureHandleResidentARB(handle);
 
-    std::cout << "Bindless Texture created, id: " << textureID
+    std::cout << "[BINDLESS TEXTURE] created, id: " << textureID
               << ", handle: " << handle << std::endl;
 }
 
@@ -47,6 +75,6 @@ BindlessTexture::~BindlessTexture() {
     glMakeTextureHandleNonResidentARB(handle);
     glDeleteTextures(1, &textureID);
 
-    std::cout << "Bindless Texture destroyed, id: " << textureID
+    std::cout << "[BINDLESS TEXTURE] destroyed, id: " << textureID
               << ", handle: " << handle << std::endl;
 }

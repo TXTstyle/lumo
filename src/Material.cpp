@@ -14,11 +14,11 @@ Material::Material(uint32_t id, std::string diffPath, std::string roughPath,
     data.normIndex = id * 3 + 1;
     data.diffIndex = id * 3 + 2;
 
-    std::cout << "Material created, id: " << id << std::endl;
+    std::cout << "[MATERIAL] created, id: " << id << std::endl;
 }
 
 Material::~Material() {
-    std::cout << "Material destroyed, id: " << id << std::endl;
+    std::cout << "[MATERIAL] destroyed, id: " << id << std::endl;
 }
 
 void Material::PushHandles(std::vector<uint64_t>& vec) {

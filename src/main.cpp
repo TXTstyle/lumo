@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -9,6 +10,7 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <array>
+#include <string>
 #include <vector>
 #include <stb/stb_image_write.h>
 
@@ -68,11 +70,17 @@ bool saveTextureToFile(GLuint textureID, int width, int height,
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+
+    if (argc != 2) {
+        std::cout << "Lumo usage:\n\tLumo <path to scene file>\n\t Ex; Lumo ./scene.toml" << std::endl;
+        exit(1);
+    }
+    std::string configPath = argv[1];
+
     Vision::Renderer renderer;
-    glm::uvec2 imgSize = {1280, 720};
     try {
-        renderer.Init(imgSize, "dev");
+        renderer.Init({1280, 720}, std::string("Lumo - ").append(configPath));
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         renderer.Shutdown();
@@ -83,8 +91,6 @@ int main() {
     shader.Use();
     shader.SetInt("uTex", 0);
     shader.SetInt("uTexOld", 1);
-
-    Vision::Camera cam({0.0f, 3.0f, -10.0f}, 45.0f, 5.0f);
 
     std::array<float, 20> verts = {
         -1.0f, 1.0f,  0.0f, 0.0f, 1.0f, //
@@ -102,14 +108,17 @@ int main() {
     Vision::VertexArray va;
     va.AddBuffer(buffer, layout);
 
-    Loader loader("res/models/scene-2.obj");
+    Config config("scene.toml");
+    std::cout << "Setup completed" << std::endl;
+    glm::vec2& imgSize = config.GetRes();
 
-    Vision::ShaderStorage ssbo(loader.GetTrigs().data(),
-                               loader.GetTrigs().size() * sizeof(Triangle), 1);
+    Vision::ShaderStorage ssbo(
+        config.GetLoader().GetTrigs().data(),
+        config.GetLoader().GetTrigs().size() * sizeof(Triangle), 1);
     ssbo.Bind();
     Vision::ShaderStorage meshesBuffer(
-        loader.GetMeshes().data(), loader.GetMeshes().size() * sizeof(MeshInfo),
-        2);
+        config.GetLoader().GetMeshes().data(),
+        config.GetLoader().GetMeshes().size() * sizeof(MeshInfo), 2);
     meshesBuffer.Bind();
 
     Vision::ComputeShader computeShader("res/shaders/Basic.comp");
@@ -118,47 +127,20 @@ int main() {
     Vision::Texture texture(imgSize.x, imgSize.y, GL_RGBA32F, 0);
     texture.Bind(0);
 
-    Material tiles(0, "res/textures/long_white_tiles_diff_2k.png",
-                      "res/textures/long_white_tiles_rough_2k.png",
-                      "res/textures/long_white_tiles_nor_gl_2k.png", //
-                      GL_RGB8, GL_R8, GL_RGB8);
-    Material plaster(1, "res/textures/painted_plaster_wall_diff_2k.png",
-                      "res/textures/painted_plaster_wall_rough_2k.png",
-                      "res/textures/painted_plaster_wall_nor_gl_2k.png", //
-                      GL_RGB8, GL_R8, GL_RGB8);
-    Material concrete(2, "res/textures/patterned_concrete_pavers_diff_2k.png",
-                      "res/textures/patterned_concrete_pavers_rough_2k.png",
-                      "res/textures/patterned_concrete_pavers_nor_gl_2k.png", //
-                      GL_RGB8, GL_R8, GL_RGB8);
-    Material planks(3, "res/textures/wood_planks_diff_2k.png",
-                    "res/textures/wood_planks_rough_2k.png",
-                    "res/textures/wood_planks_nor_gl_2k.png", //
-                    GL_RGB8, GL_R8, GL_RGB8);
-
-    std::array<MatData, 4> mats = {
-        tiles.GetData(),
-        plaster.GetData(),
-        concrete.GetData(),
-        planks.GetData(),
-    };
+    std::vector<uint64_t> handles;
+    std::vector<MatData> mats;
+    for (auto& mat : config.GetMaterials()) {
+        mat.PushHandles(handles);
+        mats.push_back(mat.GetData());
+    }
 
     Vision::ShaderStorage matsBuffer(mats.data(), mats.size() * sizeof(MatData),
                                      3);
     matsBuffer.Bind();
 
-    std::vector<uint64_t> handles;
-    handles.reserve(12);
-    plaster.PushHandles(handles);
-    tiles.PushHandles(handles);
-    concrete.PushHandles(handles);
-    planks.PushHandles(handles);
-
-    Vision::ShaderStorage textureHandles(
-        handles.data(), handles.size() * sizeof(uint64_t),
-        4);
+    Vision::ShaderStorage textureHandles(handles.data(),
+                                         handles.size() * sizeof(uint64_t), 4);
     textureHandles.Bind();
-
-    Vision::Texture envTex("res/textures/klippad_dawn_2_2k.exr", GL_RGBA32F);
 
     std::vector<uint32_t> attachments = {textureOld.GetID()};
 
@@ -187,24 +169,24 @@ int main() {
         if (glfwGetKey(renderer.GetWindow(), GLFW_KEY_ENTER) == GLFW_PRESS) {
             std::cout << "Saving..." << std::endl;
             saveTextureToFile(textureOld.GetID(), imgSize.x, imgSize.y,
-                              "saved-frame.png");
+                              config.GetOutputPath().c_str());
             textureOld.Bind(1);
             texture.Bind(0);
         }
 
         // Update camera controls
-        cam.Controls(renderer);
+        config.GetCamera().Controls(renderer);
 
         // Generate image
         computeShader.Use();
         computeShader.SetFloat("uTime", totalFrames);
-        computeShader.SetMat3f("uCamMat", cam.getMat());
-        computeShader.SetFloat("uFOV", cam.getFov());
-        computeShader.SetFloat("uMaxBounce", 10);
-        computeShader.SetFloat("uRayPerPixel", 75);
-        computeShader.SetVec3f("uCamPos", cam.getPos());
+        computeShader.SetMat3f("uCamMat", config.GetCamera().getMat());
+        computeShader.SetFloat("uFOV", config.GetCamera().getFov());
+        computeShader.SetFloat("uMaxBounce", config.GetBounces());
+        computeShader.SetFloat("uRayPerPixel", config.GetRaysPerPixel());
+        computeShader.SetVec3f("uCamPos", config.GetCamera().getPos());
         computeShader.SetVec2i("uRes", imgSize);
-        envTex.Bind(31);
+        config.GetEnv().Bind(31);
 
         computeShader.Dispatch({imgSize.x / 16, imgSize.y / 16, 1});
 
@@ -217,6 +199,7 @@ int main() {
         shader.SetFloat("uTime", totalFrames);
         shader.SetInt("uTex", 0);
         shader.SetInt("uTexOld", 1);
+        shader.SetFloat("uGamma", config.GetGamma());
 
         renderer.Draw(va, shader, 4);
 

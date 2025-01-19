@@ -8,6 +8,7 @@ uniform sampler2D uTex;
 uniform sampler2D uTexOld;
 
 uniform float uTime;
+uniform float uGamma;
 
 void main() {
     vec3 texColor = texture(uTex, vTexCoords).rgb;
@@ -15,7 +16,7 @@ void main() {
     // reinhard tone mapping
     vec3 mapped = texColor / (texColor + vec3(1.0));
     // gamma correction 
-    mapped = pow(mapped, vec3(1.0 / 2));
+    mapped = pow(mapped, vec3(1.0 / uGamma));
 
     vec3 texColorOld = texture(uTexOld, vTexCoords).rgb;
 

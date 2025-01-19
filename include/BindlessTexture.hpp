@@ -11,10 +11,10 @@ class BindlessTexture {
 
   public:
     BindlessTexture(std::string path, uint32_t format);
-    BindlessTexture(BindlessTexture&&) = default;
-    BindlessTexture(const BindlessTexture&) = default;
-    BindlessTexture& operator=(BindlessTexture&&) = default;
-    BindlessTexture& operator=(const BindlessTexture&) = default;
+    BindlessTexture(BindlessTexture& other) noexcept;
+    BindlessTexture(const BindlessTexture& other) = default;
+    BindlessTexture& operator=(BindlessTexture&&) noexcept;
+    BindlessTexture& operator=(const BindlessTexture& other) = default;
     ~BindlessTexture();
 
     inline uint64_t GetHandle() { return handle; }

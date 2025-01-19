@@ -18,9 +18,11 @@ class Texture {
     void GenEXR(const std::string path, const uint32_t format);
 
   public:
+    Texture();
     Texture(const std::string path, const uint32_t format);
     Texture(const uint32_t width, const uint32_t height, const uint32_t format, uint32_t index);
     ~Texture();
+    Texture& operator=(Texture&& other) noexcept;
 
     void CopyTo(Texture &texture);
 

@@ -27,7 +27,10 @@ class Camera {
     bool cursorToggle = false;
 
   public:
+    Camera();
     Camera(glm::vec3 p_camPos, float p_fov, float p_camSpeed);
+    Camera(Camera&& other) noexcept;
+    Camera& operator=(Camera&& other) noexcept;
     ~Camera();
 
     inline glm::vec3& getPos() { return camPos; }

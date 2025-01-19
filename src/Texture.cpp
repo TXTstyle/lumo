@@ -13,6 +13,36 @@
 
 using namespace Vision;
 
+Texture::Texture()
+    : renderID(0), width(0), height(0), format(GL_RGB8), imgFormat(GL_RGB),
+      wrapS(GL_REPEAT), wrapT(GL_REPEAT), filterMin(GL_LINEAR),
+      filterMax(GL_LINEAR) {}
+
+Texture& Texture::operator=(Texture&& other) noexcept {
+    if (this != &other) {
+        // Clean up current resources
+        if (renderID != 0) {
+            glDeleteTextures(1, &renderID);
+        }
+
+        // Transfer ownership from `other`
+        renderID = other.renderID;
+        width = other.width;
+        height = other.height;
+        format = other.format;
+        imgFormat = other.imgFormat;
+        wrapS = other.wrapS;
+        wrapT = other.wrapT;
+        filterMin = other.filterMin;
+        filterMax = other.filterMax;
+        index = other.index;
+
+        // Reset the moved-from object's texture ID
+        other.renderID = 0;
+    }
+    return *this;
+}
+
 Texture::Texture(const std::string path, const uint32_t format)
     : width(0), height(0), format(format), imgFormat(GL_RGB), wrapS(GL_REPEAT),
       wrapT(GL_REPEAT), filterMin(GL_LINEAR), filterMax(GL_LINEAR) {
@@ -27,7 +57,7 @@ Texture::Texture(const std::string path, const uint32_t format)
 
     if (path.ends_with(".exr")) {
         GenEXR(path, format);
-        std::cout << "Texture created, id: " << renderID << std::endl;
+        std::cout << "[TEXTURE] created, id: " << renderID << std::endl;
         return;
     }
 
@@ -38,7 +68,7 @@ Texture::Texture(const std::string path, const uint32_t format)
     Generate(width, height, data);
 
     stbi_image_free(data);
-    std::cout << "Texture created, id: " << renderID << std::endl;
+    std::cout << "[TEXTURE] created, id: " << renderID << std::endl;
 }
 
 Texture::Texture(const uint32_t width, const uint32_t height,
@@ -55,11 +85,11 @@ Texture::Texture(const uint32_t width, const uint32_t height,
                  NULL);
 
     glBindImageTexture(0, renderID, 0, GL_FALSE, 0, GL_READ_WRITE, format);
-    std::cout << "Texture created, id: " << renderID << std::endl;
+    std::cout << "[TEXTURE] created, id: " << renderID << std::endl;
 }
 
 Texture::~Texture() {
-    std::cout << "Texture destroyed, id: " << renderID << std::endl;
+    std::cout << "[TEXTURE] destroyed, id: " << renderID << std::endl;
 }
 
 void Texture::GenEXR(const std::string path, const uint32_t format) {

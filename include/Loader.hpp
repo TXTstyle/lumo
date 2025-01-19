@@ -10,6 +10,7 @@ class Loader {
 
   public:
     Loader(std::string path);
+    Loader() = default;
     Loader(Loader&&) = default;
     Loader(const Loader&) = default;
     Loader& operator=(Loader&&) = default;
